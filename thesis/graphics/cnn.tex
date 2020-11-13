@@ -1,0 +1,87 @@
+\begin{tikzpicture}
+    \definecolor{red}{RGB}{219, 50, 54}
+    \definecolor{yellow}{RGB}{244, 194, 13}
+    \definecolor{blue}{RGB}{72, 133, 237}
+    \definecolor{green}{RGB}{60, 186, 84}
+    \definecolor{orange}{RGB}{230, 122, 22}
+    \definecolor{purple}{RGB}{145, 91, 145}
+    \definecolor{grey}{RGB}{211, 211, 211}
+    
+    \tikzmath {
+        \boxW = 2;
+        \boxH = 2;
+        \dH = 0.1;
+        \dW = 0.1;
+        \convW = 2;
+        \convH = 2;
+        \dLayer = 3.75;
+        \shrink = 0.8;
+        \reluW = 0.5;
+        \recD = 0.5;
+        \recPad = 0.25;
+    }
+    
+    \coordinate (input_bl) at (0,0);
+    \coordinate (input_tr) at ($(input_bl) + (\boxW, \boxH)$);
+    
+    \coordinate (input_rec_bl) at ($(input_bl) + (\boxW - \recD - \recPad, \recPad)$);
+    \coordinate (input_rec_tr) at ($(input_rec_bl) + (\recD, \recD)$);
+    
+    \draw[thick] (input_rec_bl) rectangle (input_rec_tr);
+    
+    \draw[thick] (input_bl) rectangle (input_tr);
+    
+    \foreach \i in {5,...,1}
+    {
+        \coordinate (kernel_bl) at ($(input_bl) + (\dLayer - \dW * \i, \dH * \i)$);
+        \coordinate (kernel_tr) at ($(kernel_bl) + (\convW * \shrink, \convH * \shrink)$);
+        \draw[thick, fill=white] (kernel_bl) rectangle (kernel_tr);
+    }
+    
+    
+    \coordinate (conv_bl) at ($(input_bl) + (\dLayer, 0)$);
+    \coordinate (conv_tr) at ($(conv_bl) + (\convW * \shrink, \convH * \shrink)$);
+    \coordinate (conv_cr) at ($(conv_bl) + (\convW * \shrink, \boxH / 2)$);
+    \draw[thick, fill=white] (conv_bl) rectangle (conv_tr);
+    
+    \coordinate (input_rec_dest) at ($(conv_bl) + (\convW * \shrink - 0.25, 0.25)$);
+    \coordinate (conv_rec_bl) at ($(conv_tr) - (0.5, 0.5)$);
+    \coordinate (conv_rec_tr) at ($(conv_rec_bl) + (0.35, 0.35)$);
+    \draw[thick] (conv_rec_bl) rectangle (conv_rec_tr);
+    
+    
+    
+    \coordinate (relu_bl)  at ($(conv_bl) + (2.5, 0)$);
+    \coordinate (relu_c)  at ($(relu_bl) + (\reluW / 2, \boxH / 2)$);
+    \coordinate (relu_tr) at ($(relu_bl) + (\reluW, \boxH)$);
+    \coordinate (relu_lc) at ($(relu_bl) + (0, \boxH / 2)$);
+    \node[rotate=90] at (relu_c) {ReLU};
+    
+    \draw[thick] (relu_bl) rectangle (relu_tr);
+    %\draw[|->, thick] ($(conv_cr) + (0.15, 0)$) -- ($(relu_lc) - (0.15, 0)$);
+    
+    \foreach \i in {5,...,1}
+    {
+        \coordinate (pool_bl) at ($(relu_bl) + (2 - \dW * \i, \dH * \i)$);
+        \coordinate (pool_tr) at ($(pool_bl) + (\convW * \shrink * \shrink, \convH * \shrink * \shrink)$);
+        \draw[thick, fill=white] (pool_bl) rectangle (pool_tr);
+    }
+    
+    \coordinate (pool_bl) at ($(relu_bl) + (2, 0)$);
+    \coordinate (pool_tr) at ($(pool_bl) + (\convW * \shrink * \shrink, \convH * \shrink * \shrink)$);
+    \coordinate (pool_cr) at ($(pool_bl) + (\convW * \shrink * \shrink, \boxH / 2)$);
+    \draw[thick, fill=white] (pool_bl) rectangle (pool_tr);
+    
+    
+    \coordinate (conv_rec_dest) at ($(pool_tr) - (0.25, 0.25)$);
+    
+    \draw[thick, dashed] (input_rec_bl) -- (input_rec_dest);
+    \draw[thick, dashed] (input_rec_tr) -- (input_rec_dest);
+    
+    \draw[thick, dashed] (conv_rec_bl) -- (conv_rec_dest);
+    \draw[thick, dashed] (conv_rec_tr) -- (conv_rec_dest);
+    
+    \node[] at ($(conv_bl) - (0.8, 0.3)$)  {Convolution};
+    \node[] at ($(pool_bl) - (0.8, 0.3)$) {Pooling};
+    
+\end{tikzpicture}

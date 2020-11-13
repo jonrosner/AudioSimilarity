@@ -1,0 +1,167 @@
+\begin{tikzpicture}[rotate=90]
+    \definecolor{red}{RGB}{219, 50, 54}
+    \definecolor{yellow}{RGB}{244, 194, 13}
+    \definecolor{blue}{RGB}{72, 133, 237}
+    \definecolor{green}{RGB}{60, 186, 84}
+    \definecolor{orange}{RGB}{230, 122, 22}
+    \definecolor{purple}{RGB}{145, 91, 145}
+    \definecolor{grey}{RGB}{211, 211, 211}
+    
+    \tikzmath {
+        \WBox = 0.6;
+        \H = 6;
+        \D = 0.5;
+    }
+    
+    % input
+    \coordinate (input_bl) at (0,0);
+    \coordinate (input_tr) at ($(input_bl) + (\WBox,\H)$);
+    \coordinate (input_c) at ($(input_bl) + (\WBox / 2,\H / 2)$);
+    \coordinate (input_rc) at ($(input_bl) + (\WBox,\H / 2)$);
+    \draw[rounded corners, thick, fill=red!50] (input_bl) rectangle (input_tr);
+    \node[align=center, thick] at (input_c) {Input FFT};
+    
+    % conv1
+    \coordinate (conv1_lc) at ($(input_rc) + (\D,0)$);
+    \coordinate (conv1_c) at ($(conv1_lc) + (\WBox / 2, 0)$);
+    \coordinate (conv1_rc) at ($(conv1_lc) + (\WBox, 0)$);
+    \coordinate (conv1_bl) at ($(conv1_c) - (\WBox / 2, \H / 2)$);
+    \coordinate (conv1_tr) at ($(conv1_bl) + (\WBox, \H)$);
+    \draw[rounded corners, thick, fill=blue!50] (conv1_bl) rectangle (conv1_tr);
+    \node[align=center, thick] at (conv1_c) {7$\times$7 conv,96,/2};
+    
+    \draw[->, thick] (input_rc) -- (conv1_lc);
+    
+    % mpool1
+    \coordinate (mpool1_lc) at ($(conv1_rc) + (\D,0)$);
+    \coordinate (mpool1_c) at ($(mpool1_lc) + (\WBox / 2, 0)$);
+    \coordinate (mpool1_rc) at ($(mpool1_lc) + (\WBox, 0)$);
+    \coordinate (mpool1_bl) at ($(mpool1_c) - (\WBox / 2, \H*0.9 / 2)$);
+    \coordinate (mpool1_tr) at ($(mpool1_bl) + (\WBox, \H*0.9)$);
+    \draw[rounded corners, thick, fill=yellow!50] (mpool1_bl) rectangle (mpool1_tr);
+    \node[align=center, thick] at (mpool1_c) {3$\times$3 mpool,/2};
+    
+    \draw[->, thick] (conv1_rc) -- (mpool1_lc);
+    
+    % conv2
+    \coordinate (conv2_lc) at ($(mpool1_rc) + (\D,0)$);
+    \coordinate (conv2_c) at ($(conv2_lc) + (\WBox / 2, 0)$);
+    \coordinate (conv2_rc) at ($(conv2_lc) + (\WBox, 0)$);
+    \coordinate (conv2_bl) at ($(conv2_c) - (\WBox / 2, \H*0.8 / 2)$);
+    \coordinate (conv2_tr) at ($(conv2_bl) + (\WBox, \H*0.8)$);
+    \draw[rounded corners, thick, fill=blue!50] (conv2_bl) rectangle (conv2_tr);
+    \node[align=center, thick] at (conv2_c) {5$\times$5 conv,256,/2};
+    
+    \draw[->, thick] (mpool1_rc) -- (conv2_lc);
+    
+    % mpool2
+    \coordinate (mpool2_lc) at ($(conv2_rc) + (\D,0)$);
+    \coordinate (mpool2_c) at ($(mpool2_lc) + (\WBox / 2, 0)$);
+    \coordinate (mpool2_rc) at ($(mpool2_lc) + (\WBox, 0)$);
+    \coordinate (mpool2_bl) at ($(mpool2_c) - (\WBox / 2, \H*0.7 / 2)$);
+    \coordinate (mpool2_tr) at ($(mpool2_bl) + (\WBox, \H*0.7)$);
+    \draw[rounded corners, thick, fill=yellow!50] (mpool2_bl) rectangle (mpool2_tr);
+    \node[align=center, thick] at (mpool2_c) {3$\times$3 mpool,/2};
+    
+    \draw[->, thick] (conv2_rc) -- (mpool2_lc);
+    
+    % conv3
+    \coordinate (conv3_lc) at ($(mpool2_rc) + (\D,0)$);
+    \coordinate (conv3_c) at ($(conv3_lc) + (\WBox / 2, 0)$);
+    \coordinate (conv3_rc) at ($(conv3_lc) + (\WBox, 0)$);
+    \coordinate (conv3_bl) at ($(conv3_c) - (\WBox / 2, \H*0.6 / 2)$);
+    \coordinate (conv3_tr) at ($(conv3_bl) + (\WBox, \H*0.6)$);
+    \draw[rounded corners, thick, fill=blue!50] (conv3_bl) rectangle (conv3_tr);
+    \node[align=center, thick] at (conv3_c) {3$\times$3 conv,384,/1};
+    
+    \draw[->, thick] (mpool2_rc) -- (conv3_lc);
+    
+    % conv4
+    \coordinate (conv4_lc) at ($(conv3_rc) + (\D,0)$);
+    \coordinate (conv4_c) at ($(conv4_lc) + (\WBox / 2, 0)$);
+    \coordinate (conv4_rc) at ($(conv4_lc) + (\WBox, 0)$);
+    \coordinate (conv4_bl) at ($(conv4_c) - (\WBox / 2, \H*0.6 / 2)$);
+    \coordinate (conv4_tr) at ($(conv4_bl) + (\WBox, \H*0.6)$);
+    \draw[rounded corners, thick, fill=blue!50] (conv4_bl) rectangle (conv4_tr);
+    \node[align=center, thick] at (conv4_c) {3$\times$3 conv,256,/1};
+    
+    \draw[->, thick] (conv3_rc) -- (conv4_lc);
+    
+    % conv5
+    \coordinate (conv5_lc) at ($(conv4_rc) + (\D,0)$);
+    \coordinate (conv5_c) at ($(conv5_lc) + (\WBox / 2, 0)$);
+    \coordinate (conv5_rc) at ($(conv5_lc) + (\WBox, 0)$);
+    \coordinate (conv5_bl) at ($(conv5_c) - (\WBox / 2, \H*0.6 / 2)$);
+    \coordinate (conv5_tr) at ($(conv5_bl) + (\WBox, \H*0.6)$);
+    \draw[rounded corners, thick, fill=blue!50] (conv5_bl) rectangle (conv5_tr);
+    \node[align=center, thick] at (conv5_c) {3$\times$3 conv,256,/1};
+    
+    \draw[->, thick] (conv4_rc) -- (conv5_lc);
+    
+    % mpool5
+    \coordinate (mpool5_lc) at ($(conv5_rc) + (\D,0)$);
+    \coordinate (mpool5_c) at ($(mpool5_lc) + (\WBox / 2, 0)$);
+    \coordinate (mpool5_rc) at ($(mpool5_lc) + (\WBox, 0)$);
+    \coordinate (mpool5_bl) at ($(mpool5_c) - (\WBox / 2, \H*0.6 / 2)$);
+    \coordinate (mpool5_tr) at ($(mpool5_bl) + (\WBox, \H*0.6)$);
+    \draw[rounded corners, thick, fill=yellow!50] (mpool5_bl) rectangle (mpool5_tr);
+    \node[align=center, thick] at (mpool5_c) {5$\times$3 mpool,/(3,2)};
+    
+    \draw[->, thick] (conv5_rc) -- (mpool5_lc);
+    
+    % conv6
+    \coordinate (conv6_lc) at ($(mpool5_rc) + (\D,0)$);
+    \coordinate (conv6_c) at ($(conv6_lc) + (\WBox / 2, 0)$);
+    \coordinate (conv6_rc) at ($(conv6_lc) + (\WBox, 0)$);
+    \coordinate (conv6_bl) at ($(conv6_c) - (\WBox / 2, \H*0.55 / 2)$);
+    \coordinate (conv6_tr) at ($(conv6_bl) + (\WBox, \H*0.55)$);
+    \draw[rounded corners, thick, fill=blue!50] (conv6_bl) rectangle (conv6_tr);
+    \node[align=center, thick] at (conv6_c) {9$\times$1 conv,4096,/1};
+    
+    \draw[->, thick] (mpool5_rc) -- (conv6_lc);
+    
+    % apool6
+    \coordinate (apool6_lc) at ($(conv6_rc) + (\D,0)$);
+    \coordinate (apool6_c) at ($(apool6_lc) + (\WBox / 2, 0)$);
+    \coordinate (apool6_rc) at ($(apool6_lc) + (\WBox, 0)$);
+    \coordinate (apool6_bl) at ($(apool6_c) - (\WBox / 2, \H*0.4 / 2)$);
+    \coordinate (apool6_tr) at ($(apool6_bl) + (\WBox, \H*0.4)$);
+    \draw[rounded corners, thick, fill=orange!50] (apool6_bl) rectangle (apool6_tr);
+    \node[align=center, thick] at (apool6_c) {1$\times$n apool,/1};
+    
+    \draw[->, thick] (conv6_rc) -- (apool6_lc);
+    
+    % fc7
+    \coordinate (fc7_lc) at ($(apool6_rc) + (\D,0)$);
+    \coordinate (fc7_c) at ($(fc7_lc) + (\WBox / 2, 0)$);
+    \coordinate (fc7_rc) at ($(fc7_lc) + (\WBox, 0)$);
+    \coordinate (fc7_bl) at ($(fc7_c) - (\WBox / 2, \H*0.3 / 2)$);
+    \coordinate (fc7_tr) at ($(fc7_bl) + (\WBox, \H*0.3)$);
+    \draw[rounded corners, thick, fill=purple!50] (fc7_bl) rectangle (fc7_tr);
+    \node[align=center, thick] at (fc7_c) {fc,1024};
+    
+    \draw[->, thick] (apool6_rc) -- (fc7_lc);
+    
+    % fc8
+    \coordinate (fc8_lc) at ($(fc7_rc) + (\D,0)$);
+    \coordinate (fc8_c) at ($(fc8_lc) + (\WBox / 2, 0)$);
+    \coordinate (fc8_rc) at ($(fc8_lc) + (\WBox, 0)$);
+    \coordinate (fc8_bl) at ($(fc8_c) - (\WBox / 2, \H*0.4 / 2)$);
+    \coordinate (fc8_tr) at ($(fc8_bl) + (\WBox, \H*0.4)$);
+    \draw[rounded corners, thick, fill=purple!50] (fc8_bl) rectangle (fc8_tr);
+    \node[align=center, thick] at (fc8_c) {fc,$c$};
+    
+    \draw[->, thick] (fc7_rc) -- (fc8_lc);
+    
+     % softmax
+    \coordinate (softmax_lc) at ($(fc8_rc) + (\D,0)$);
+    \coordinate (softmax_c) at ($(softmax_lc) + (\WBox / 2, 0)$);
+    \coordinate (softmax_rc) at ($(softmax_lc) + (\WBox, 0)$);
+    \coordinate (softmax_bl) at ($(softmax_c) - (\WBox / 2, \H*0.4 / 2)$);
+    \coordinate (softmax_tr) at ($(softmax_bl) + (\WBox, \H*0.4)$);
+    \draw[rounded corners, thick, fill=green!50] (softmax_bl) rectangle (softmax_tr);
+    \node[align=center, thick] at (softmax_c) {Softmax};
+    
+    \draw[->, thick] (fc8_rc) -- (softmax_lc);
+
+\end{tikzpicture}

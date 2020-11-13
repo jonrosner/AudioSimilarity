@@ -1,0 +1,96 @@
+\begin{tikzpicture}
+    \definecolor{red}{RGB}{219, 50, 54}
+    \definecolor{yellow}{RGB}{244, 194, 13}
+    \definecolor{blue}{RGB}{72, 133, 237}
+    \definecolor{green}{RGB}{60, 186, 84}
+    \definecolor{orange}{RGB}{230, 122, 22}
+    \definecolor{purple}{RGB}{145, 91, 145}
+    \definecolor{grey}{RGB}{211, 211, 211}
+    
+    \tikzmath {
+        \lBoxH = 6;
+        \lBoxW = 10;
+        \arrowD = 0.25;
+    }
+    
+    \coordinate (analysis_box_bl) at (0,0);
+    \coordinate (analysis_box_tr) at ($(analysis_box_bl) + (\lBoxW, \lBoxH)$);
+    \coordinate (analysis_box_tl) at ($(analysis_box_bl) + (0, \lBoxH)$);
+    \coordinate (analysis_box_br) at ($(analysis_box_tr) - (0, \lBoxH)$);
+    \draw[rounded corners, thick] (analysis_box_bl) rectangle (analysis_box_tr);
+    
+    \coordinate (analysis_arrow_t) at ($(analysis_box_tl) - (\arrowD, 0)$);
+    \coordinate (analysis_arrow_b) at ($(analysis_box_bl) - (\arrowD, 0)$);
+    \draw[->, thick] (analysis_arrow_t) -- (analysis_arrow_b);
+    
+    \coordinate (analysis_text) at ($(analysis_arrow_t) - (0.25, \lBoxH / 2)$);
+    \node[thick, rotate=90] at (analysis_text) {1. Analysis};
+    
+    \coordinate (synthesis_arrow_t) at ($(analysis_box_tr) + (\arrowD, 0)$);
+    \coordinate (synthesis_arrow_b) at ($(analysis_box_br) + (\arrowD, 0)$);
+    \draw[->, thick] (synthesis_arrow_b) -- (synthesis_arrow_t);
+    
+    \coordinate (synthesis_text) at ($(synthesis_arrow_t) + (0.25, -\lBoxH / 2)$);
+    \node[thick, rotate=270] at (synthesis_text) {3. Synthesis};
+    
+    \coordinate (analysis_box_bc) at ($(analysis_box_bl) + (\lBoxW / 2, 0)$);
+    
+    \coordinate (fft_text) at ($(analysis_box_bc) + (0, \lBoxH - 0.4)$);
+    \node[] at (fft_text) {Raw Samples};
+    
+    
+    \coordinate (analysis_waveform_c) at ($(analysis_box_bc) + (0, \lBoxH - 1.6)$);
+    \node[inner sep=0pt] (waveform) at (analysis_waveform_c)
+        {\scalebox{.7}{\input{figures/waveform.pgf}}};
+    
+    \coordinate (window_text) at ($(analysis_waveform_c) - (0, 1)$);
+    \node[] at (window_text) {Window Function};
+    
+    \coordinate (window1_c) at ($(window_text) - (\lBoxW/2 - 2, 0.8)$);
+    \node[inner sep=0pt] (window1) at (window1_c)
+        {\scalebox{.5}{\input{figures/window_function.pgf}}};
+    \coordinate (window2_c) at ($(window1_c) + (1.5,0)$);
+    \node[inner sep=0pt] (window2) at (window2_c)
+        {\scalebox{.5}{\input{figures/window_function.pgf}}};
+    \coordinate (window3_c) at ($(window2_c) + (1.5,0)$);
+    \node[inner sep=0pt] (window3) at (window3_c)
+        {\scalebox{.5}{\input{figures/window_function.pgf}}};
+    \coordinate (window4_c) at ($(window3_c) + (1.5,0)$);
+    \node[inner sep=0pt] (window4) at (window4_c)
+        {\scalebox{.5}{\input{figures/window_function.pgf}}};
+    \coordinate (window5_c) at ($(window4_c) + (1.5,0)$);
+    \node[inner sep=0pt] (window5) at (window5_c)
+        {\scalebox{.5}{\input{figures/window_function.pgf}}};
+    \coordinate (window6_c) at ($(window5_c) + (1.5,0)$);
+    
+    \coordinate (stft_text) at ($(window_text) - (0, 1.5)$);
+    \node[] at (stft_text) {STFT / iSTFT};
+    
+    \coordinate (stft1_l) at ($(window1_c) - (1.2,1.2)$);
+    \coordinate (stft1_r) at ($(stft1_l) + (2.5,0)$);
+    \draw[|-|, thick] (stft1_l) -- (stft1_r);
+
+    \coordinate (stft2_l) at ($(stft1_r) - (1,0.25)$);
+    \coordinate (stft2_r) at ($(stft2_l) + (2.5,0)$);
+    \draw[|-|, thick] (stft2_l) -- (stft2_r);
+    
+    \coordinate (stft3_l) at ($(stft2_r) - (1,0.25)$);
+    \coordinate (stft3_r) at ($(stft3_l) + (2.5,0)$);
+    \draw[|-|, thick] (stft3_l) -- (stft3_r);
+    
+    \coordinate (stft4_l) at ($(stft3_r) - (1,0.25)$);
+    \coordinate (stft4_r) at ($(stft4_l) + (2.5,0)$);
+    \draw[|-|, thick] (stft4_l) -- (stft4_r);
+    
+    \coordinate (stft5_l) at ($(stft4_r) - (1,0.25)$);
+    \coordinate (stft5_r) at ($(stft5_l) + (2.5,0)$);
+    \draw[|-|, thick] (stft5_l) -- (stft5_r);
+    
+    \coordinate (processing_box_bc) at ($(analysis_box_bc) - (0, 1.25)$);
+    \coordinate (processing_box_bl) at ($(processing_box_bc) - (\lBoxW / 2, 0)$);
+    \coordinate (processing_box_tr) at ($(processing_box_bl) + (\lBoxW, 1)$);
+    \coordinate (processing_box_c) at ($(processing_box_bc) + (0, 0.5)$);
+    \draw[rounded corners, thick] (processing_box_bl) rectangle (processing_box_tr);
+    \node[align=center, thick] at (processing_box_c) {2. Processing};
+    
+\end{tikzpicture}

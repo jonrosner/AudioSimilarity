@@ -1,0 +1,229 @@
+% !TeX root = ../main.tex
+
+\chapter{Contrastive Learning for Audio}\label{chapter:claudio}
+
+We combine the learnings of the previous chapters to propose a new framework for the problem of similarity learning of audio representations based on recent advances in self-supervised, contrastive and transfer learning. We call it "\gls{claudio}". In the following sections we take a closer look at the individual components of the framework and explain the reasoning behind different design choices.
+
+\section{Learning Framework}
+
+In this section, we talk about the different stages and specifics of our learning framework. In each subsection, we go into detail about the specific tasks. Algorithms \ref{alg:claudio_pretraining} and \ref{alg:claudio_transfer} show the execution process of our framework in the pre-training and transfer stage. Analogously Figure \ref{fig:claudio} describes those stages in a more visual way. All stages are explained in more detail in the following subsections. Circled numbers in the text correspond to the same marker in Figure \ref{fig:claudio}.
+
+But Before going into the details of \gls{claudio} we first want to state the intuition behind it. The final goal of \gls{claudio} is to be able to represent audio signals in such a way that a machine can tell whether or not two signals are similar or not. To achieve this we employ contrastive learning, which enables us to train a neural network to transform input signals in such a way that the outputs have our required properties. Unfortunately, contrastive learning requires labels to learn the similarity of input pairs, but as explained in Section \ref{subsec:contrastive_learning} we can make use of self-supervised learning to create our own labels. In simple words, this self-supervised task is to find two randomly augmented signals, constructed from the same source signal, out of a batch of other unrelated signals. To achieve this we make use of the \gls{ntxent} loss that tries to maximize similarity between those two augmented signals and minimizes similarity towards the others. In doing so we train an encoder network that solves our problem of determining audio similarity. This encoder network can later be transferred into a low-data domain to solve various downstream tasks.
+
+\begin{figure}[!h]
+    \centering
+    \scalebox{1.25}{\input{graphics/claudio2}}
+    \caption[Contrastive learning for Audio]{Graphical overview of the \gls{claudio} framework. Marked arrows are explained in more detail in the text.}
+    \label{fig:claudio}
+\end{figure}
+
+\begin{algorithm}
+    \caption{CL-Audio Pretraining}
+    \label{alg:claudio_pretraining}
+    
+    \begin{algorithmic}[1]
+        \State \textbf{Input:} encoder network $f$, projection network $g$, trainable parameters $\boldsymbol{\theta}$, random transformations $\mathcal{T}$, batch size $N$, learning rate $\alpha$, temperature $\tau$, audio enhancements $E$
+        \State Randomly initialize $\boldsymbol{\theta}$
+        \While{not done}
+            \For{sampled minibatch $\{\boldsymbol{x}_k\}_{k=1}^N$}
+                \ForAll{$k \in \{1,...,N\}$}
+                    \State convert $\boldsymbol{x}_{k}$ to 16-bit PCM
+                    \State $t \sim \mathcal{T}$ \Comment{1. augmentation}
+                    \State $\Tilde{\boldsymbol{x}}_{2k-1} \gets t(\boldsymbol{x}_k)$
+                    \State $\Tilde{\boldsymbol{x}}_{2k-1} \gets E(\Tilde{\boldsymbol{x}}_{2k-1})$ \Comment{preemphasis, DC-removal, dither}
+                    \State $\hat{\boldsymbol{x}}_{2k-1} \gets STFT(\Tilde{\boldsymbol{x}}_{2k-1})$
+                    \State $\boldsymbol{z}_{2k-1} \gets g(f(\hat{\boldsymbol{x}}_{2k-1}))$
+                    \State $t' \sim \mathcal{T}$ \Comment{2. augmentation}
+                    \State $\Tilde{\boldsymbol{x}}_{2k} \gets t'(\boldsymbol{x}_k)$
+                    \State $\Tilde{\boldsymbol{x}}_{2k} \gets E(\Tilde{\boldsymbol{x}}_{2k})$ \Comment{preemphasis, DC-removal, dither}
+                    \State $\hat{\boldsymbol{x}}_{2k} \gets STFT(\Tilde{\boldsymbol{x}}_{2k})$
+                    \State $\boldsymbol{z}_{2k} \gets g(f(\hat{\boldsymbol{x}}_{2k}))$
+                \EndFor
+                \ForAll{$i \in \{1,...,2N\}$ and $j \in \{1,...,2N\}$}
+                    \State $s_{i,j} \gets \boldsymbol{z}^\intercal_i \boldsymbol{z}_j / (\left\lVert\boldsymbol{z}_i\right\rVert \left\lVert\boldsymbol{z}_j\right\rVert)$ \Comment{Cosine Similarity}
+                \EndFor
+            \EndFor
+            \State \textbf{let} $\ell(i,j) = -\log \tfrac{\exp(s_{i,j}/\tau)}{\sum_{k=1}^{2N} \mathbb{1}_{[k \neq i]} \exp(s_{i,k} / \tau)}$ \Comment{NT-Xent loss}
+            \State $\mathcal{L} \gets \tfrac{1}{2N} \sum_{k=1}^{N} [\ell(2k-1,2k) + \ell(2k,2k-1)]$
+            \State $\boldsymbol{\theta} \gets \boldsymbol{\theta} - \alpha \nabla_\theta \mathcal{L}$
+        \EndWhile
+        \State \textbf{return} $f$ \Comment{Throw away $g$}
+    \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+    \caption{CL-Audio Transfer}
+    \label{alg:claudio_transfer}
+    
+    \begin{algorithmic}[1]
+        \State \textbf{Input:} frozen encoder network $f$ from pretraining, classification head $g'$ with trainable parameters $\boldsymbol{\theta'}$, batch size $N$, learning rate $\alpha$, audio enhancements $E$
+        \State Randomly initialize $\boldsymbol{\theta'}$
+        \While{not done}
+            \For{sampled minibatch $(\boldsymbol{X}, \boldsymbol{y})$ of size $N$}
+                \ForAll{$k \in \{1,...,N\}$}
+                    \State convert $\boldsymbol{x}_k$ to 16-bit PCM
+                    \State $\boldsymbol{x}_k \gets E(\boldsymbol{x}_k)$ \Comment{preemphasis, DC-removal, dither}
+                    \State $\boldsymbol{x}_k \gets STFT(\boldsymbol{x}_k)$
+                \EndFor
+                \State $\hat{\boldsymbol{y}} \gets softmax(g'(f(\boldsymbol{X})))$
+                \State $\mathcal{L} \gets \sum_{k=1}^{N} \boldsymbol{y}_k \log \hat{\boldsymbol{y}}_k$ \Comment{Categorical Cross-Entropy}
+                \State $\boldsymbol{\theta'} \gets \boldsymbol{\theta'} - \alpha \nabla_{\theta'} \mathcal{L}$
+            \EndFor
+        \EndWhile
+        \State \textbf{return} $f \circ g'$
+    \end{algorithmic}
+\end{algorithm}
+
+\subsection{Pre-Training}
+
+\gls{claudio} is a deep-learning framework for few-shot transfer learning based on initial self-supervised similarity learning using a contrastive loss. The left side of Figure \ref{fig:claudio} shows the self-supervised pre-training stage of the framework. Input on each pass through the framework is a sampled minibatch of audio data $\{x_k\}_{k=1}^N$ of size $N$. Each sample is first augmented by two stochastic transformations $t$ and $t'$ sampled from a set of transformations $\mathcal{T}$ \circled{1}. The specifics of these augmentations are explained in Section \ref{sec:augmentation}. The two resulting audio signals are both transformed using the \gls{stft} into the frequency domain \circled{2}. In this step, we also apply a few audio enhancement techniques. Details regarding these enhancements can be found in Section \ref{sec:enhancement}. The resulting spectrograms $\hat{\boldsymbol{x}}_k$ act as the input to the encoder network $f(\cdot)$. The encoder network can be any deep neural network that accepts matrix-like time-series data and outputs vectors. Both spectrograms are fed into the encoder network \circled{3}. The output of this are two vectors. These vectors, also called embeddings, are the latent representations of the two augmentations of the input data. Those embeddings are again transformed using a fully-connected network $g(\cdot)$ \circled{4}, also called the projection head. Chen et al. 2020 \cite{chen2020simple} found that using such a projection head drastically improves the performance of a contrastive learning algorithm. The two outputs of the projection head $z_k$ and $z_{2k}$ will act as the positive input pairs for the contrastive \gls{ntxent} loss term $\mathcal{L}$ \circled{5} while all others act as negative input pairs. Note that all this is performed using a batch of $N$ input samples simultaneously. This results in $N$ positive input pairs and $2(N-1)$ negative input pairs for each pass through the network. Both networks are trained using backpropagation and stochastic gradient descent to minimize $\mathcal{L}$. This initial stage is trained with as much unlabeled data as possible. For this purpose we created a 310GB large dataset which is explained in more detail in Section \ref{subsec:ss_dataset}. The number of epochs to train in this stage is hard to determine since there is no verification loss that we can compare to. To prevent overfitting and to lower training time we stop as soon as the training loss does not decrease from one epoch to another. After training is complete $g(\cdot)$ is discarded.
+
+\subsection{Transfer}
+
+The next stage is the transfer stage shown in the right side of Figure \ref{fig:claudio}, which transfers the embedding network $f(\cdot)$ trained in the pre-training phase and puts it into a new, low-data classification domain \circled{6}. Here the input is again a single audio file represented as samples $x_k$ but this time we also use corresponding labels $y_k$. This time the audio is transformed into a spectrogram without any previous augmentation. The spectrogram is then fed into the pre-trained embedding network $f(\cdot)$ and the resulting embedding vector is fed into a new fully-connected network $g'(\cdot)$, also called the classification head, which transforms the dimensionality of the latent vector into the correct number of classes of the classification task. The output of the classification head is often called logits. Contrary to the dataset in the pre-training phase, this dataset does contain labels $y_k$, which are used together with the logits in a softmax categorical cross-entropy loss $\mathcal{L}$ to train the new classification head $g'(\cdot)$ while the weights of $f(\cdot)$ are frozen, which means they are not trainable. In this stage, we use a verification loss to determine when to stop training. We fix the number of training epochs and in the end return the network that performed the best on the verification dataset.
+
+\subsection{Fine-Tuning}
+
+In a third, optional stage, both the embedding network and the classification head can be made trainable and the entire network is trained on the same data again with a very low learning rate, to further increase accuracy. This stage has to be tested for performance. It is not guaranteed that fine-tuning actually increases performance but in a few experiments we even found that it decreases performance. If the smaller dataset of the transfer stage is too small compared to the size of the classification head, we found that finetuning had no effect on accuracy but as the size of the dataset increases, we found that finetuning got more and more important.
+
+\section{Data Preprocessing}\label{sec:preprocessing}
+
+To correctly input the data into the network, there are several preprocessing steps that have to be performed first to assure optimal performance of the network. We start off with audio files on disc which can be stored in many different formats and codecs like \textit{.wav}, \textit{.mp3} or \textit{.flac}. It is important that our network receives only data that is of the same kind, therefore we first transform the content of the file to raw signed 16-bit \gls{pcm} samples with sample rate 16kHz on a single channel (mono). We chose this format because most of the datasets available also use these parameters. Converting from a standard \textit{.mp3}-file to this configuration is straight forward. We first decode the codec to obtain raw samples, make it mono by averaging over both stereo channels, then resample from the original sample rate (usually 44.1kHz) to our target rate 16kHz and then convert the resulting samples to 16-bit \gls{pcm} by multiplying each sample with $2^8$. The conversion for a \textit{.flac}-file is achieved analogously.
+
+\section{Augmentation}\label{sec:augmentation}
+
+We now take a closer look at all the employed augmentations. The reason we use augmentations to create two distinct views of the same source is twofold. First, we need to create a self-supervised task for the algorithm and secondly, we need a task that is sufficiently difficult for the machine to learn strong embeddings. As explained in Section \ref{subsec:self_supervised} there exist many different kinds of self-supervised tasks to choose from but most of them yield suboptimal results. The reason we chose data augmentation as our contrastive prediction task is because it decouples the target from the encoder architecture. This way we can very precisely compare different encoder models and are able to adapt our framework when new, stronger models are discovered.
+
+In each remaining subsection, we describe the augmentation process and our design decision for each augmentation respectively. All augmentations are applied with a fixed probability of 60\% in the order that they are listed here. Figure \ref{fig:augmentations} shows the same audio clip with every augmentation applied individually. Note that the original audio clip was chosen because of its distinctive activity in the higher frequencies so that the individual augmentations become more visible.
+
+\begin{figure}[H]
+    \centering
+    \input{figures/augmentations.pgf}
+    \caption[Augmentations]{Each augmentation applied individually to one sound file with distinctive high ends to better distinguish the effects of the respective augmentation.}
+    \label{fig:augmentations}
+\end{figure}
+
+\subsection{Crop}
+
+At first, any audio clip is cropped at random. We input 10 seconds of samples and crop a 4.5-second clip from it even though the input to our network will only be 3 seconds long. We do this because we anticipate the later time stretching stage. As we will explain later we shrink up to a factor of 0.7, which means that a 4.5-second clip will result in at least 3 seconds of input data after time stretching. Cropping can be seen as a way to artificially increase the size of the dataset since a single input clip can potentially be split into several independent input clips. Figure \ref{fig:crop} shows a 10-second audio clip in blue and a 3-second crop of it in red.
+
+\begin{figure}[H]
+    \centering
+    \input{figures/crop.pgf}
+    \caption[Crop]{1Hz sine wave in blue and cropped clip in red.}
+    \label{fig:crop}
+\end{figure}
+
+\subsection{Gain}
+
+Gain is added to the signal in a straightforward fashion by multiplying the signal with a factor and clipping it afterward as depicted in Equation \ref{eq:gain}. Random gain changes can be seen as simulating different distances of the same source to a microphone.
+
+\begin{equation}\label{eq:gain}
+    y_{gain}(n) = min(max((y(n) \cdot \gamma), -1), 1)
+\end{equation}
+
+Here $\gamma$ is a hyperparameter that controls the amount of gain. It will be the hyperparameter sampled stochastically in our augmentation pipeline. $y(n)$ denotes the input signal. The output is then clipped in the range of $[-1,1]$. Figure \ref{fig:gain} shows a sine wave in blue and the same sine wave with 2dB of gain applied to it in red.
+
+\begin{figure}[H]
+    \centering
+    \input{figures/gain_2db.pgf}
+    \caption[Gain]{100Hz sinus in blue and with gain of 2dB applied in red.}
+    \label{fig:gain}
+\end{figure}
+
+\subsection{White Noise}
+
+Even though there are many different kinds of noise, like Brownian noise, pink noise, etc. we limit ourselves to adding white noise to a signal. White noise is simply uniformly distributed noise over all frequencies. After adding this random noise we clip the resulting signal. We scale the white noise uniformly between -40 dB and +20 dB. Adding white noise can be seen as a regularizer for quiet frequencies, since overall amplitude is increased uniformly, the percentage of low-level frequencies is decreased, therefore it is harder to hear them.
+
+\begin{equation}\label{eq:whitenoise}
+    y_{wn}(n) = min(max(y(n) + \gamma \cdot \mathcal{U}(-1, 1), -1), 1)
+\end{equation}
+
+where $\gamma$ is again a stochastically sampled parameter that controls the amount of noise added to the signal. $\mathcal{U}(-1, 1)$ is a random distribution between -1 and 1. Again the output must be clipped to stay between the minimal and maximal amplitude.
+Figure \ref{fig:whitenoise} shows a sine wave and the same wave with white noise and $\gamma = of 1.03dB$ added to it.
+
+\begin{figure}[H]
+    \centering
+    \input{figures/whitenoise.pgf}
+    \caption[Whitenoise]{100Hz sinus in blue and with white noise added in red.}
+    \label{fig:whitenoise}
+\end{figure}
+
+\subsection{Low-pass and High-pass Filter}
+
+We apply low pass filtering as an environmental effect. Just like gain can be seen as a change in distance to the observer, a low pass filtering effect occurs in nature when objects between the producer and the observer alter the sound, like for example a wall can dampen a sound. To reproduce this effect we employ a Butterworth low-pass filter at a frequency between 100 and 2000 Hz and a random order from 1 to 5. Figure \ref{fig:butter_orders} shows the frequency response of a low-pass Butterworth filter at 200 Hz with different orders.
+
+\begin{figure}[H]
+    \centering
+     \input{figures/butter_order.pgf}
+    \caption[Butterworth-Filter with different orders]{Frequency response of a low-pass Butterworth filter with a cutoff frequency of 200Hz and orders ranging from 1 to 5.}
+    \label{fig:butter_orders}
+\end{figure}
+
+
+We chose this filter because it has a very flat frequency response, meaning it does not produce any audible artifacts on the cutoff frequency and above. This kind of filter was first proposed by S. Butterworth in 1930 \cite{butterworth1930filter}.
+
+Figure \ref{fig:lpCompare} shows a comparison to others filters. This clearly shows that the Butterworth filter rolls off more smoothly than the others without any ripple effects. Analogously to the low-pass filter, we use the Butterworth filter as a high-pass filter.
+
+\begin{figure}[H]
+    \centering
+     \input{figures/lp_filters_compare.pgf}
+    \caption[Low-pass filter comparison]{Frequency response of four different low-pass filters with a cutoff frequency at 200Hz.}
+    \label{fig:lpCompare}
+\end{figure}
+
+
+\subsection{Time-Stretch}
+
+Time-stretching is an effect that tries to increase the duration of an audio clip without introducing any other audible sound effects, like changing the pitch of the audio. Time-stretching is achieved using the phase vocoder algorithm described in Section \ref{sec:phase_vocoder}. In the analysis phase of the vocoder algorithm, the separate \gls{stft} buckets are pushed together to achieve speedup and pulled apart to achieve a slowdown. Afterwards, they are synthesized back together to obtain the original audio but in a different length. Since time-stretching, besides cropping, is the only augmentation that changes the shape of the data we have to make sure that after time-stretching, all examples are cropped again into the correct shape, therefore we cannot allow time stretching to decrease the number of samples below the input-size of our network. We start with a $4.5$ second audio clip and randomly shrink or stretch it by a factor of $0.7$ to $1.3$ and then crop all excess samples to yield a 3-second clip.
+
+We experimented with many different implementations and found that there does not yet exist a perfect solution for our use case. Whereas all other computations fall into the range of 2 to 20 milliseconds, the minimum time for time stretching was 150ms with the pyrubberband \cite{pyrubberband} python library. It is a wrapper to the more common command-line interface rubberband \cite{rubberband}. Rubberband produces the best results of all the approaches that we have tried. The wrapper simply calls the library's \gls{cli} and stores and loads intermediate results on disk. This is of course a significant overhead. We made the tradeoff of merely decreasing the probability that time stretching is applied to 5\%, which results in similar computational time as the other augmentations. Figure \ref{fig:timestretch} shows a simple sine-wave of 200Hz in blue that has a short period of silence in it, indicated by the zero values around 50 and 60 ms. The red line is the time-stretched version by a factor of 2. Both lines overlap almost perfectly while the period of silence is cut in half. This means the frequency of this signal is maintained while time is shortened. We can see artifacts at the end of the audio clip which are introduced by the last \gls{stft} window having to zero-pad the signal, also the amplitude changes slightly. One should note that though visible here, these differences are in fact not audible by humans.
+
+\begin{figure}[H]
+    \centering
+    \input{figures/timestretch.pgf}
+    \caption[Time-stretch]{100Hz sinus with a short period of silence in blue and the same signal speeded up by a factor of 2 in red.}
+    \label{fig:timestretch}
+\end{figure}
+
+\subsection{Pitch-Shift}
+
+Pitch is the perceived frequency of sound. Pitch-shifting is an effect that changes the pitch of a signal without changing the duration of it. To understand how pitch-shifting works, we first look at the effect of resampling. The simplest way to change the time and pitch of a digital audio signal is through resampling. Resampling means changing the sample rate of a digital signal and then playing it back at the original sample rate. The effect of this can be seen in Figure \ref{fig:resample}. The blue line is again a sine wave with 100Hz sampled at 16kHz and the red line is the same signal resampled to 32kHz and plotted on the same timescale as the 16kHz signal It is obvious that this operation halves the duration of the signal, since only every other sample is used in the new signal, but also the entire frequency spectrum is scaled with the same factor, thus increasing or decreasing the perceived pitch accordingly.
+
+\begin{figure}[H]
+    \centering
+    \input{figures/resampling.pgf}
+    \caption[Resampling]{100Hz sinus sampled at 16kHz in blue and the same signal resampled to 8kHz in red.}
+    \label{fig:resample}
+\end{figure}
+
+Even though this is not the desired effect pitch-shifting makes use of it by introducing it into a two-stage process. First the signal is time-stretched by a factor of $1 / \alpha$ and then resampled to a target frequency $ fs_t = \alpha \cdot fs_o$ and finally played back at the original sample rate $fs_o$. The time-stretch of the first stage is canceled out by the opposing time-stretch of the second stage, leaving behind only the change in pitch by a factor of $\alpha$. Figure \ref{fig:pitchshift} shows again the same 100Hz signal in blue and the same signal down-pitched by 3 semitones in red. Pitching by 12 semitones is equivalent to a doubling in frequency.
+
+\begin{figure}[H]
+    \centering
+    \input{figures/pitchshift.pgf}
+    \caption[Pitchshift]{100Hz sinus with a short period of silence in blue and the same signal pitch-shifted by -3 semitones.}
+    \label{fig:pitchshift}
+\end{figure}
+
+\section{STFT Enhancement}\label{sec:enhancement}
+
+After augmentation, we now want to transform the resulting audio from the time domain to the frequency domain to have the correct input shape for our network. But instead of simply transforming it using plain \gls{stft} we first apply some audio enhancement techniques to mitigate the negative effects of possible bad quality audio recordings and to increase the quality of the resulting \gls{stft}. Three of such enhancement techniques were used here. (1) Pre-emphasis filter, (2) \gls{dc} removal, (3) dither. The pre-emphasis effect decreases the volume of lower frequencies and boosts higher ones. This is a common technique in speech processing to increase the volume of speech-specific frequencies while lowering others. Equation \ref{eq:preemphasis} shows the most common way of pre-emphasis filtering of a signal. We use a default value for $\alpha$ of 0.97.
+
+\begin{equation}\label{eq:preemphasis}
+    pre(x_n) = x_n - \alpha x_{n-1}
+\end{equation}
+
+\gls{dc} removal counters the fact that bad audio recordings usually have an equipment-introduced \gls{dc} offset, which means the mean of the waveform is not at zero. This can cause low-frequency distortion. We achieve \gls{dc} removal by applying a digital high-pass filter at a frequency close to zero. The equation for this filter is shown in Equation \ref{eq:dcremoval}.
+
+\begin{equation}\label{eq:dcremoval}
+    y_n = x_n - x_{n-1} + y_{n-1} - 0.99 y_{n-2}
+\end{equation}
+
+The last enhancement step is called dithering. It is the process of adding noise to a signal to increase its quality, which at first sounds counter-intuitive. To understand why dithering can actually improve perceived sound quality one has to know about the negative effects of quantization as explained in Section \ref{sec:nn_audio}. Since digitized signals with a low bit depth introduce a lot of quantization error, these distortion effects can become audible especially in higher frequencies. To cover these effects we introduce a special kind of noise called dither to the signal that masks higher order distortions. Audible higher-order harmonics are swapped with inaudible noise. Equation \ref{eq:dither} shows a simple way of adding a small amount of dither to a signal.
+
+\begin{equation}\label{eq:dither}
+    dither(x_n) = x_n + 10^{-6} * \sigma_x \cdot \mathcal{U}(-1,1)
+\end{equation}
+
+$\mathcal{U}(-1,1)$ denotes a uniform distribution between -1 and 1.

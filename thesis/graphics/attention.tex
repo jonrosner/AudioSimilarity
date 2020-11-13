@@ -1,0 +1,54 @@
+\begin{tikzpicture}
+    \definecolor{red}{RGB}{219, 50, 54}
+    \definecolor{yellow}{RGB}{244, 194, 13}
+    \definecolor{blue}{RGB}{72, 133, 237}
+    \definecolor{green}{RGB}{60, 186, 84}
+    \definecolor{orange}{RGB}{230, 122, 22}
+    \definecolor{purple}{RGB}{145, 91, 145}
+    \definecolor{grey}{RGB}{211, 211, 211}
+    
+    \tikzstyle{a}=[thick, draw, minimum height=1, rounded corners]
+    
+    \tikzmath {
+        \dbox = 0.75;
+    }
+    
+    \coordinate (matmul1_c) at (0,0);
+    \node[a, fill=purple!50] (matmul1) at (matmul1_c) {$\;$ MatMul $\;$};
+    
+    \coordinate (scale_c) at ($(matmul1_c) + (0, \dbox)$);
+    \node[a, fill=yellow!50] (scale) at (scale_c) {$\;$ Scale $\;$};
+    
+    \coordinate (mask_c) at ($(scale_c) + (0, \dbox)$);
+    \node[a, fill=blue!50] (mask) at (mask_c) {$\;$ Mask $\;$};
+    
+    \coordinate (softmax_c) at ($(mask_c) + (0, \dbox)$);
+    \node[a, fill=green!50] (softmax) at (softmax_c) {$\;$ Softmax $\;$};
+    
+    \coordinate (matmul2_c) at ($(softmax_c) + (0.75, \dbox)$);
+    \node[a, fill=purple!50] (matmul2) at (matmul2_c) {$\;\;\;$ MatMul $\;\;\;$};
+    
+    \coordinate (q_txt_c) at ($(matmul1_c) - (0.5, 1)$);
+    \node[] (q_txt) at (q_txt_c) {$Q$};
+    
+    \coordinate (k_txt_c) at ($(q_txt_c) + (1, 0)$);
+    \node[] (k_txt) at (k_txt_c) {$K$};
+    
+    \coordinate (v_txt_c) at ($(k_txt_c) + (1, 0)$);
+    \node[] (v_txt) at (v_txt_c) {$V$};
+    
+    \draw[thick, ->] (q_txt) -- (q_txt|-matmul1.south);
+    \draw[thick, ->] (k_txt) -- (k_txt|-matmul1.south);
+    \draw[thick, ->] (v_txt) -- (v_txt|-matmul2.south);
+    
+    \draw[thick, ->] (matmul1) -- (scale);
+    \draw[thick, ->] (scale) -- (mask);
+    \draw[thick, ->] (mask) -- (softmax);
+    \draw[thick, ->] (softmax) -- (softmax|-matmul2.south);
+    
+    \coordinate (empty_arr) at ($(matmul2_c) + (0, 0.5)$);
+    \draw[thick, ->] (matmul2) -- (empty_arr);
+    
+    
+    
+\end{tikzpicture}

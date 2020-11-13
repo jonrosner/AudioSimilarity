@@ -1,0 +1,78 @@
+\begin{tikzpicture}
+    \definecolor{red}{RGB}{219, 50, 54}
+    \definecolor{yellow}{RGB}{244, 194, 13}
+    \definecolor{blue}{RGB}{72, 133, 237}
+    \definecolor{green}{RGB}{60, 186, 84}
+    \definecolor{orange}{RGB}{230, 122, 22}
+    \definecolor{purple}{RGB}{145, 91, 145}
+    \definecolor{grey}{RGB}{211, 211, 211}
+    
+    \tikzmath {
+        \augmentationW = 3cm;
+        \augmentationH = 0.75cm;
+        \augmentationDw = 2;
+        \augmentationDh = 1.375;
+        \networkW = 7cm;
+        \networkH = 1cm;
+    }
+    
+    \tikzstyle{boxNofill}=[thick,draw, minimum width=\augmentationW, minimum height=\augmentationH, rounded corners]
+    
+    \tikzstyle{network}=[thick,draw, minimum width=\networkW, minimum height=\networkH, rounded corners]
+    
+    \coordinate (input_c) at (0,0);
+    \node[boxNofill, fill=purple!50] (input) at (input_c) {Input};
+    
+    \coordinate (preprocessing_c) at ($(input_c) - (0, \augmentationDh)$);
+    \node[boxNofill, fill=purple!50] (preprocessing) at (preprocessing_c) {Preprocessing};
+        
+    \coordinate (augmentation1_c) at ($(preprocessing_c) - (\augmentationDw, \augmentationDh)$);
+    \node[boxNofill, fill=blue!50] (augmentation1) at (augmentation1_c) {Augmentation};
+    
+    \coordinate (augmentation2_c) at ($(preprocessing_c) - (-\augmentationDw, \augmentationDh)$);
+    \node[boxNofill, fill=orange!50] (augmentation2) at (augmentation2_c) {Augmentation};
+    
+    \coordinate (enhancement1_c) at ($(augmentation1_c) - (0, \augmentationDh)$);
+    \node[boxNofill, fill=blue!50] (enhancement1) at (enhancement1_c) {Enhancement};
+    
+    \coordinate (enhancement2_c) at ($(augmentation2_c) - (0, \augmentationDh)$);
+    \node[boxNofill, fill=orange!50] (enhancement2) at (enhancement2_c) {Enhancement};
+    
+    \coordinate (stft1_c) at ($(enhancement1_c) - (0, \augmentationDh)$);
+    \node[boxNofill, fill=blue!50] (stft1) at (stft1_c) {STFT};
+    
+    \coordinate (stft2_c) at ($(enhancement2_c) - (0, \augmentationDh)$);
+    \node[boxNofill, fill=orange!50] (stft2) at (stft2_c) {STFT};
+    
+    \coordinate (embedding_c) at ($(stft1_c) + (\augmentationDw, -1.5)$);
+    \coordinate (embedding_b1) at ($(embedding_c) - (0.4, 0.5)$);
+    \coordinate (embedding_b2) at ($(embedding_c) - (-0.4, 0.5)$);
+    \node[network, fill=yellow!50] (embedding) at (embedding_c) {Embedding Network};
+    
+    \coordinate (projection_c) at ($(embedding_c) - (0, 1.625)$);
+    \coordinate (projection_t1) at ($(projection_c) + (-0.4, 0.5)$);
+    \coordinate (projection_t2) at ($(projection_c) + (0.4, 0.5)$);
+    \coordinate (projection_b1) at ($(projection_c) - (0.4, 0.5)$);
+    \coordinate (projection_b2) at ($(projection_c) - (-0.4, 0.5)$);
+    \node[network, fill=red!50] (projection) at (projection_c) {Projection Head};
+    
+    \coordinate (xent_c) at ($(projection_c) - (0, 1.5)$);
+    \coordinate (xent_t1) at ($(xent_c) + (-0.4, 0.75 / 2)$);
+    \coordinate (xent_t2) at ($(xent_c) + (0.4, 0.75 / 2)$);
+    \node[boxNofill, fill=purple!50] (xent) at (xent_c) {NT-Xent Loss};
+    
+    \draw[->, thick] (input) -- (preprocessing);
+    \draw[->, thick] (preprocessing) -- (augmentation1);
+    \draw[->, thick] (preprocessing) -- (augmentation2);
+    \draw[->, thick] (augmentation1) -- (enhancement1);
+    \draw[->, thick] (augmentation2) -- (enhancement2);
+    \draw[->, thick] (enhancement1) -- (stft1);
+    \draw[->, thick] (enhancement2) -- (stft2);
+    \draw[->, thick] (stft1) -- (embedding);
+    \draw[->, thick] (stft2) -- (embedding);
+    \draw[->, thick] (embedding_b1) -- (projection_t1);
+    \draw[->, thick] (embedding_b2) -- (projection_t2);
+    \draw[->, thick] (projection_b1) -- (xent_t1);
+    \draw[->, thick] (projection_b2) -- (xent_t2);
+    
+\end{tikzpicture}

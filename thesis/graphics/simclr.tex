@@ -1,0 +1,53 @@
+\begin{tikzpicture}
+    \tikzstyle{c}=[shape=circle,thick,draw,minimum size=1cm]
+    \tikzstyle{t}=[minimum size=1cm, thick]
+    
+    % input
+    \coordinate (input_c) at (0,0);
+    \node[c] (input) at (input_c) {$x$};
+    
+    % left augmentation
+    \coordinate (x_aug_1_c) at ($(input_c) - (3,0) + (0,1)$);
+    \node[c] (x_aug_1) at (x_aug_1_c) {$\tilde{x_i}$};
+
+    \draw[->,thick] (input) -- (x_aug_1) node[midway,sloped,below] {$t \sim T$};
+    
+    % right augmentation
+    \coordinate (x_aug_2_c) at ($(input_c) + (3,0) + (0,1)$);
+    \node[c] (x_aug_2) at (x_aug_2_c) {$\tilde{x_j}$};
+    
+    \draw[->,thick] (input) -- (x_aug_2) node[midway,sloped,below] {$t' \sim T$};
+    
+    % left embedding
+    \coordinate (emb_1_c) at ($(x_aug_1_c) + (0,2.5)$);
+    \node[t] (emb_1) at (emb_1_c) {$h_i$};
+    
+    \draw[->,thick] (x_aug_1) -- (emb_1) node[midway,left] {$f(\cdot)$};
+    
+    % right embedding
+    \coordinate (emb_2_c) at ($(x_aug_2_c) + (0,2.5)$);
+    \node[t] (emb_2) at (emb_2_c) {$h_j$};
+    
+    \draw[->,thick] (x_aug_2) -- (emb_2) node[midway,right] {$f(\cdot)$};
+    
+    % representations
+    \path let \p1=(input_c),\p2=(emb_2) in coordinate (rep) at (\x1,\y2);
+    
+    \node[align=center, thick] at (rep) {$\longleftarrow$ Representation $\longrightarrow$};
+    
+    % left projection
+    \coordinate (proj_1_c) at ($(emb_1_c) + (0,2)$);
+    \node[t] (proj_1) at (proj_1_c) {$z_i$};
+    
+    \draw[->,thick] (emb_1) -- (proj_1) node[midway,left] {$g(\cdot)$};
+    
+    % right projection
+    \coordinate (proj_2_c) at ($(emb_2_c) + (0,2)$);
+    \node[t] (proj_2) at (proj_2_c) {$z_j$};
+    
+    \draw[->,thick] (emb_2) -- (proj_2) node[midway,right] {$g(\cdot)$};
+    
+    \draw[<->,thick] (proj_1) -- (proj_2) node[midway,above] {Maximize agreement};
+    
+    
+\end{tikzpicture}

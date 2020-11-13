@@ -1,0 +1,132 @@
+\begin{tikzpicture}
+    \definecolor{red}{RGB}{219, 50, 54}
+    \definecolor{yellow}{RGB}{244, 194, 13}
+    \definecolor{blue}{RGB}{72, 133, 237}
+    \definecolor{green}{RGB}{60, 186, 84}
+    \definecolor{orange}{RGB}{230, 122, 22}
+    \definecolor{purple}{RGB}{145, 91, 145}
+    \definecolor{grey}{RGB}{211, 211, 211}
+    
+    \tikzmath {
+        \cellW = 9;
+        \cellH = 4.5;
+        \dSigmaW = 1.5;
+        \dSigmaH = 0.5;
+        \pad = 0.6;
+    }
+    
+    \tikzstyle{a}=[thick,draw, minimum width=1cm, minimum height=0.5cm, fill=yellow!50]
+    \tikzstyle{b}=[shape=circle,thick,draw,minimum size=0.5cm, fill=red!50]
+    \tikzstyle{c}=[shape=rectangle,rounded corners,thick,draw,minimum height=0.5cm, fill=red!50]
+    
+    \coordinate (cell_bl) at (0,0);
+    \coordinate (cell_tr) at ($(cell_bl) + (\cellW, \cellH)$);
+    \draw[thick, rounded corners, fill=green!50] (cell_bl) rectangle (cell_tr);
+    
+    \coordinate (sigma_ft_c) at ($(cell_bl) + (\pad + 0.2, \pad + \dSigmaH)$);
+    \node[a] (sigma_ft) at (sigma_ft_c) {\Large $\sigma$};
+    
+    \coordinate (sigma_it_c) at ($(sigma_ft) + (\dSigmaW, 0)$);
+    \node[a] (sigma_it) at (sigma_it_c) {\Large $\sigma$};
+    
+    \coordinate (tanh_ct_c) at ($(sigma_it) + (\dSigmaW, 0)$);
+    \node[a] (tanh_ct) at (tanh_ct_c) {$tanh$};
+    
+    \coordinate (sigma_ot_c) at ($(tanh_ct_c) + (\dSigmaW, 0)$);
+    \node[a] (sigma_ot) at (sigma_ot_c) {\Large $\sigma$};
+    
+    \coordinate (ct_mul_c) at ($(sigma_ft_c) + (0, \cellH - 2 * \pad - \dSigmaH)$);
+    \node[b] (ct_mul) at (ct_mul_c) {$\times$};
+    
+    \path let \p1=(tanh_ct_c),\p2=(ct_mul_c) in coordinate (ct_plus_c) at (\x1,\y2);
+    \node[b] (ct_plus) at (ct_plus_c) {$+$};
+    
+    \coordinate (ct_mul_it_c) at ($(tanh_ct_c) + (0, 1.2)$);
+    \node[b] (ct_mul_it) at (ct_mul_it_c) {$\times$};
+    
+    \coordinate (ot_mul_c) at ($(sigma_ot_c) + (\dSigmaW, 1.2)$);
+    \node[b] (ot_mul) at (ot_mul_c) {$\times$};
+    
+    \coordinate (ot_tanh_c) at ($(ot_mul_c) + (0, 0.8)$);
+    \node[c] (ot_tanh) at (ot_tanh_c) {$tanh$};
+    
+    \path let \p1=(cell_bl),\p2=(ct_mul_c) in coordinate (c_input_border) at (\x1,\y2);
+    \coordinate (c_input_c) at ($(c_input_border) - (1,0)$);
+    \node[] (c_input) at (c_input_c) {$c_{t-1}$};
+    
+    \coordinate (h_input_c) at ($(cell_bl) + (-1, \pad)$);
+    \node[] (h_input) at (h_input_c) {$h_{t-1}$};
+    
+    \coordinate (x_input_c) at ($(cell_bl) + (0.5, -0.75)$);
+    \node[] (x_input) at (x_input_c) {$x_t$};
+    
+    \coordinate (h_output1_c) at ($(h_input_c) + (1 + \cellW + 1, 0)$);
+    \node[] (h_output1) at (h_output1_c) {$h_t$};
+    
+    \coordinate (c_output_c) at ($(c_input_c) + (1 + \cellW + 1, 0)$);
+    \node[] (c_output) at (c_output_c) {$c_t$};
+    
+    \coordinate (h_output2_c) at ($(cell_tr) + (-0.75, 0.75)$);
+    \node[] (h_output2) at (h_output2_c) {$h_t$};
+    
+    \draw[thick] (c_input) -- (ct_mul);
+    \draw[thick] (ct_mul) -- (ct_plus);
+    \draw[thick, ->] (sigma_ft) -- (ct_mul);
+    \draw[thick, ->] (ct_plus) -- (c_output);
+    \draw[thick] (tanh_ct) -- (ct_mul_it);
+    \draw[thick, ->] (ct_mul_it) -- (ct_plus);
+    
+    \path let \p1=(sigma_ot_c),\p2=(h_input_c) in coordinate (h_input_path1) at (\x1,\y2);
+    
+    \draw[thick, rounded corners] (h_input) -- (h_input_path1) -- (sigma_ot);
+    
+    \path let \p1=(sigma_ft_c),\p2=(h_input_c) in coordinate (h_input_sigma_ft) at (\x1,\y2);
+    \path let \p1=(sigma_it_c),\p2=(h_input_c) in coordinate (h_input_sigma_it) at (\x1,\y2);
+    \path let \p1=(tanh_ct_c),\p2=(h_input_c) in coordinate (h_input_tanh_ct) at (\x1,\y2);
+    
+    \draw[thick] (h_input_sigma_ft) -- (sigma_ft);
+    \draw[thick] (h_input_sigma_it) -- (sigma_it);
+    \draw[thick] (h_input_tanh_ct) -- (tanh_ct);
+    
+    \path let \p1=(sigma_it_c),\p2=(ct_mul_it_c) in coordinate (it_path1) at (\x1,\y2);
+    
+    \draw[thick, rounded corners, ->] (sigma_it) -- (it_path1) -- (ct_mul_it);
+    
+    \path let \p1=(sigma_ot_c),\p2=(ot_mul_c) in coordinate (ot_path1) at (\x1,\y2);
+    
+    \draw[thick, rounded corners, ->] (sigma_ot) -- (ot_path1) -- (ot_mul);
+    
+    \path let \p1=(ot_mul_c),\p2=(h_output1_c) in coordinate (ot_output_path) at (\x1,\y2);
+    
+    \draw[thick, rounded corners, ->] (ot_mul) -- (ot_output_path) -- (h_output1);
+    
+    \path let \p1=(ot_tanh_c),\p2=(c_input_c) in coordinate (c_ot_path) at (\x1,\y2);
+    \draw[thick] (c_ot_path) -- (ot_tanh);
+    \draw[thick] (ot_tanh) -- (ot_mul);
+    
+    \path let \p1=(x_input_c),\p2=(h_input_c) in coordinate (x_input_path) at (\x1,\y2);
+    
+    \draw[thick] (x_input) -- (x_input_path);
+    
+    \path let \p1=(h_output2_c),\p2=(h_output1_c) in coordinate (h_output2_path1) at (\x1,\y2);
+    
+    \path let \p1=(h_output2_c),\p2=(c_input_c) in coordinate (h_output2_path2) at (\x1,\y2);
+    
+    \coordinate (h_output2_path3) at ($(h_output2_path2) - (0, 0.15)$);
+    \coordinate (h_output2_path4) at ($(h_output2_path2) + (0, 0.15)$);
+    
+    \draw[thick] (h_output2_path1) -- (h_output2_path3);
+    \draw[thick, ->] (h_output2_path4) -- (h_output2);
+    
+    \coordinate (ft_text) at ($(sigma_ft_c) + (-0.2,1.1)$);
+    \node[] at (ft_text) {$f_t$};
+    
+    \coordinate (it_text) at ($(it_path1) - (0.2,0.2)$);
+    \node[] at (it_text) {$i_t$};
+    
+    \coordinate (ot_text) at ($(ot_path1) - (0.2,0.2)$);
+    \node[] at (ot_text) {$o_t$};
+    
+    % \coordinate (ct_text) at ($(ct_mul_it_c) - (0.2,0.6)$);
+    % \node[] at (ct_text) {$c_t$};
+\end{tikzpicture}

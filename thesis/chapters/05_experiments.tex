@@ -1,0 +1,275 @@
+% !TeX root = ../main.tex
+
+\chapter{Experiments}\label{chapter:experiments}
+
+In this chapter, we describe all the experiments that we conducted to test the quality of the \gls{claudio} learning framework. The experiments go as follows: First, we train each network using \gls{claudio} to obtain a pre-trained encoder network. Then we transfer this network to a novel domain as depicted in Figure \ref{fig:claudio} and train a small, randomly initialized classification head network on the outputs of the encoder network. All the experiments have the same final goal of classifying unknown audio samples into predefined categories. We will look at multiple domains, represented by three different datasets, two of which are publically available for the purpose of reproducibility. The first domain is speaker recognition which we will explore using the VoxCeleb \cite{Chung18b} dataset. We will also purposefully lower the amount of training data to simulate a low-data environment in this domain. We call this dataset VoxCeleb50-20 because it contains 50 classes and 20 samples per class. For the second domain, artist classification, we created a dataset only for this thesis to see if \gls{claudio} can successfully classify the rich and complex information contained in music. The last domain will be birdsong classification, which will be explored using the British Birdsong Dataset \cite{stowell2014xccoverbl}. In all of the three domains, we will compare the performance of CL-Audio towards the same networks trained using only supervision and, if available, results of related work on the same domain. This chapter is structured as follows: (1) We first look at the individual datasets used for training and for our individual domains, (2) we go into more detail about the three models we use for our experiments. (3) We briefly report all the necessary evaluation metrics and hyperparameters used in the experiments. (4) We show all results and discuss the findings.
+
+\section{Datasets}
+
+First, we take a closer look at all datasets used for training and testing. The first dataset we look at is the large, unannotated training dataset for the \gls{claudio} self-supervision pre-training task. After that, we go into more detail on the VoxCeleb dataset, then discuss our music-classification dataset and lastly look at the British Birdsong dataset. Key metrics of the individual datasets can be found in Table \ref{tab:datasets}.
+
+\begin{table}[htpb]
+  \centering
+  \begin{tabular}{l c c r}
+    \toprule
+        Dataset & Classes & Instances per class & Classification target \\
+        \midrule
+        VoxCeleb & 1,251 & 123 & Speaker \\
+        Music & 58 & 40 & Artist \\
+        Birdsong & 54 & 20 & Species \\
+        VoxCeleb50-20 & 50 & 20 & Speaker \\
+    \bottomrule
+  \end{tabular}
+  \caption[Datasets]{Key metrics of the datasets used in the experiments.}\label{tab:datasets}
+\end{table}
+
+\subsection{Self-Supervised Pre-Training Dataset}\label{subsec:ss_dataset}
+
+This is the training data that we use for the pre-training phase of our framework. It is a combination of different datasets. The main goal of this dataset is to maximize the amount of information and variation that the network will be exposed to. This data does not have to be labeled and can therefore be extracted from any source available. We combined three sources: $i$) \textit{LibriSpeech} \cite{panayotov2015librispeech}, $ii$) a collection of music and $iii$) \textit{AudioSet} \cite{audioset}. 
+
+The LibriSpeech corpus is a dataset that contains 1000 hours of read English speech. Its data is extracted from audiobooks from the LibriVox project. Since the clips are stored as .flac files, we first have to extract the samples and convert them to 16-bit \gls{pcm} as explained in Section \ref{sec:preprocessing}. We then split the result into 10 second long clips for easier processing with our input-pipeline.
+
+The next part of the set consists of a large collection of music. In total 169.5 GB, resulting in 3,533 hours of music, parsed into 10 second long clips. Since most of the files are stored in the .mp3 format, they also have to be parsed. The last part of the dataset is a subset of the AudioSet dataset. AudioSet consists of over 5,800 hours of audio from over 2.1 million videos. From this entire set, we downloaded 1,000 hours of audio from random videos in the dataset to increase the diversity of our dataset. These clips include anything from speech, music, vehicles, lawnmowers or weather. All these combined results in a dataset of over one million 10 second sample clips and one can easily see that since no labeling effort goes into the creation of this dataset, the upper bound is practically only determined by the amount of hard drive available which in our case was roughly 310GB.
+
+\subsection{VoxCeleb}
+
+VoxCeleb is a speaker-identification and verification dataset. The authors of VoxCeleb claimed that previous datasets in this field struggled to create large corpora due to the intense manual labor involved in the annotation. Therefore what they proposed was “a fully automated pipeline based on computer vision techniques to create the dataset from open-source media" \cite{Chung18b}. This pipeline starts by collecting videos from YouTube, then extracting the sound and speakers from these videos and performing active speaker recognition, which is the task of determining whether the person in the picture produced the sound or not. This was done using \textit{SyncNet} \cite{Chung16a}. After that a face verification algorithm determines if the face in the frame is actually the person of interest. If this is the case, the audio clip is added to the dataset and correctly labeled. With this method, they curated a dataset of over 100,000 utterances of over 1,000 celebrities. For few-shot learning, we purposefully decreased the number of speakers to the first 50 of those. In their paper, the authors also proposed a strong baseline for the tasks of audio-based speaker identification and verification. In this thesis, we used their VGG-based model as the main model for all experiments. It is described in more detail in Section \ref{sec:vggvox}. Unfortunately, the paper lacks some crucial implementation details which we, in turn, had to fill in. As described later we could not fully reproduce their reported results, so we used our results as a point of reference since they align more with similar experiments done by others \cite{viashin2019}. The VoxCeleb is by far the most used dataset of the three presented in this chapter and therefore, to increase reproducibility and comparability of this work, it will be the main focus in our experiments. Other work on this dataset include Chung et al. \cite{chung2020delving}, Okabe et al. \cite{Okabe_2018} and Yang et al. \cite{yang2020speakerveri}. Fortunately, since all the files are stored as 16-bit \gls{pcm} \textit{.wav}-files sampled at 16kHz, there is no processing required to use them with our input-pipeline.
+
+\subsection{Music Classification}
+
+For the task of music artist classification we parsed and annotated 1,450 songs by 58 artists. We made sure that each artist had at least 3 albums to increase musical and environmental diversity per artist and that all songs contained vocals, to increase distinct audio features per artist. We then split the songs into 20 train and 5 test songs and from those sampled 3 utterances each, therefore no song must have a length less than 30 seconds. Again these clips first have to be parsed from \textit{.mp3} to 16-bit \gls{pcm} format at 16kHz.
+
+\subsection{British Birdsong Dataset}
+
+To explore \gls{claudio}’s performance on an entirely unknown category we selected the relatively small British Birdsong dataset. It is a specific subset gathered from the \textit{Xeno Canto collection} \cite{stowell2014xccoverbl}. For our case we try to classify each sample by the annotated species. For us to take a species into the dataset it must have at least 3 recordings all of which combined must have no less than 250 seconds of sound. To create a balanced dataset we filter out all the excess recordings. 20 10-second clips from the first two recordings are then used as training data. Note that due to input-size restrictions of the networks only 3 seconds of the 10-second clips are randomly sampled on each run. 5 10-second clips of the third recording are then used for testing. This results in a total of 180 minutes of training data. The files come as \textit{.flac} files so they have to be parsed and split accordingly. This dataset is a good showcase for an algorithm's versatility on low-data, highly specialized domains.
+
+\section{Encoder Model Architectures}
+
+Now we take a closer look at the three different encoder model architectures implemented for the experiments. The reason for implementing and testing on several models is to showcase the model-agnostic properties of our framework. All models have proven track records in the field of audio classification. In the following subsections, we take a closer look at each model, including a graphical overview and its major key metrics. Key figures of the models are listed in Table \ref{tab:models}.
+
+\begin{table}[htpb]
+  \centering
+  \begin{tabular}{l c c}
+    \toprule
+        Model & Trainable Parameters & Evaluation Method \\
+        \midrule
+        VGG-Vox & 17,911,267 & Full utterances \\
+        LSTM & 19,425,871 & Avg. of 10s cuts \\
+        SpeechTransformer & 15,571,773 & Avg. of 10s cuts \\
+    \bottomrule
+  \end{tabular}
+  \caption[Encoder Models]{Encoder models used in the experiments and their respective number of trainable parameters and evaluation method.}\label{tab:models}
+\end{table}
+
+\subsection{VGG-Vox}\label{sec:vggvox}
+
+The first model that we look at is called VGG-Vox, proposed by the creators of the VoxCeleb dataset. It is a convolutional neural network based on the VGG-M architecture first proposed by Chatfield et al. in 2014 \cite{chatfield2014return}. The VGG model architecture consists of several stacked blocks of convolution, followed by batch normalization, \gls{relu} activation and max-pooling. Most of the architecture stayed the same but for slight modifications to adapt to spectrogram inputs. The single most important contribution is the replacement of the VGG-M’s fully connected layer that reshapes the two-dimensional convolutional input into one-dimensional vectors fit for dense input.
+
+VGG-Vox replaced this layer with a fully connected layer of size $9\times1$ followed by an average pooling layer of size $n$, where $n$ is the size of the temporal dimension of the network's last convolutional layer's output. This change is of significant importance for audio data since it removes the need for a fixed input size in the temporal dimension but not in the frequency dimension, which means we can input clips of arbitrary length as long as the number of FFT-bins stays the same. This is a significant advantage compared to all other models in this thesis. Note that in none of the major modern deep learning libraries, one can stack data of different shapes into a single batch. Therefore to feed clips of different durations to the network, we have to pass one after another, which greatly decreases performance. Due to this, we limit this approach to test time and train on fixed-size batches of 3-second clips.
+
+Figure \ref{fig:vggvox_model} shows the entire model. In the case of self-supervised pre-training, the final fully connected layer and softmax will be replaced by a projection head consisting of two fully connected layers of size 1024. Only in the transfer stage will a classification head of the depicted form replace the projection head. In Figure \ref{fig:vggvox_model}, $c$ is the number of classes of the supervised transfer-domain. The model was trained using a batch size of $80$.
+
+\begin{figure}[h!]
+    \centering
+    \input{graphics/vggvox}
+    \caption[VGG-Vox Model]{The VGG-Vox model. Each operation has the form $n \times m$ (kernel size), operation, $N$ (number of filters), $/(a,b)$ (stride: $/a$ when $a = b$) }
+    \label{fig:vggvox_model}
+\end{figure}
+
+\newpage
+
+\subsection{LSTM}
+
+Recurrent Neural Networks and especially \glspl{lstm} have long been a staple in the realm of time series prediction. Its ability to prevent gradients from vanishing over long series proved highly useful in the domain of audio data as well. As explained in more detail in Section \ref{subsec:lstm} a \gls{lstm} layer consists of a cell that successively updates its own state based on a portion of the input data and its previous state. \gls{lstm} layers can be stacked just like convolutional layers to produce even more specific features based on hidden states of the previous layer. In our architecture we stack 2 \gls{lstm} layers. To produce an output that can be fed to a fully connected layer, we simply reject all hidden states returned by the \gls{lstm} except the last one. Another extension we used to \gls{lstm} is called bidirectional \gls{lstm}. Instead of only passing the data to the cell from beginning to end, we also pass it vice versa on a second run and then concatenate the hidden states of the two passes. Therefore we can capture temporal dependencies in both directions. Figure \ref{fig:lstm} shows an overview of our architecture.
+
+\begin{figure}[!h]
+    \centering
+    \input{graphics/lstm}
+    \caption[LSTM Model]{Two-layer Bi-LSTM model with a classification head.}
+    \label{fig:lstm}
+\end{figure}
+
+Unfortunately, this way of computation is inherently not parallelizable and therefore \glspl{lstm} generally have slower training times compared to \glspl{cnn} or attention-based sequence classifiers. Although counter-intuitive, most deep learning libraries do not offer the ability to pass inputs of arbitrary lengths to the \gls{lstm}. This is due to the fact that those libraries usually build a static execution graph during compile time, which is basically an unrolled \gls{lstm} to increase performance. Due to this we cannot test on full-length audio clips but rather have to cut them first into the shape of the training data and average the results of all of these cuts. This way, though computationally more efficient, is not as accurate. Again the softmax layer at the end is replaced during the pre-training stage for a projection head that consists of two fully connected layers.
+
+\subsection{Speech Transformer}
+
+The last model we will look at is based on the attention mechanism proposed by Vaswani et al. in 2017 \cite{NIPS2017_7181} called Transformers. Whereas the major application area of Transformers today is natural language processing, we wanted to try out this architecture in the realm of audio data because of its highly parallelizable time-series transformation quality. The model that we will experiment with in this thesis is based on the Speech Transformer proposed by \cite{zhao2019speechtransformer}. The full transformer model consists of an encoder and a decoder part to solve sequence-to-sequence tasks. Since we limit ourselves to the case of classification we use only the encoder part of the model. To reduce the input size of the Multi-Head-Attention blocks we prepend two convolutional layers to the model with a stride of two. Since self-attention does not have any notion of positional knowledge we have to add a positional encoding before feeding it to the multi-head attention block. We use the same positional encoding proposed by the original authors of the transformers defined in Equation \ref{eq:pe_even} for even positions and Equation \ref{eq:pe_uneven} for uneven positions. In our case $pos$ denotes the time-step and $i$ denotes the frequency bin of the \gls{stft}. A plot of the encoding signal is shown in Figure \ref{fig:pos_encoding}. 
+
+\begin{figure}[!h]
+    \centering
+    \input{figures/pos_encoding.pgf}
+    \caption[Positional Encoding]{A visualization of the positional encoding that is added to the STFT input of the network. Darker colors indicate higher values}
+    \label{fig:pos_encoding}
+\end{figure}
+
+\begin{equation}\label{eq:pe_even}
+    PE(pos, 2i) = sin\Big(\frac{pos}{10000^{2i/d_{model}}}\Big)
+\end{equation}
+
+\begin{equation}\label{eq:pe_uneven}
+    PE(pos, 2i+1) = cos\Big(\frac{pos}{10000^{2i/d_{model}}}\Big)
+\end{equation}
+
+Each transformer-block consists of an initial multi-head-attention followed by a skip connection and layer normalization. The output is forwarded into a feed-forward layer that is again followed by a skip connection and layer normalization to stabilize training. In total we stack 8 of these transformer-blocks. Note that these blocks do not reshape the data, therefore after 8 blocks we still have data shaped the same way as the input. After the transformer blocks, the output is averaged across the time dimension to create one-dimensional vectors. This is one of the major bottlenecks of the transformer. We decided against simply flattening the output, which would be analogous to a CNN because the shape of the resulting vector would simply be too large to be feasible. An output of $128 x 74$ would result in a linear layer with $9,699,328$ weights if the output size would be $1024$ just like in the other models. We also tried appending a learnable vector at the start of every sequence. The idea was to use this vector's last hidden state to be used as a summarization vector of the entire sequence since the transformer blocks make it attend to all other time-steps. This is a similar approach that the \gls{bert} architecture \cite{devlin2019bert} uses by introducing a $[CLS]$ token that is prepended to every sentence to be used as a sentence-level representation. Unfortunately, this approach did not yield good results so it was also discarded. These single vector representations are then piped into a linear layer and finally a softmax classifier on top of it. Again during pre-training, this classifier is replaced by a projection head consisting of two fully connected layers.
+
+Just like the \gls{lstm} based network, the Speech Transformer is relying on equally shaped input data, meaning all clips need to have the same duration. Again we employ the evaluation method of splitting the test-clips into 3-second cuts, feeding them through the network, and averaging the resulting probabilities to obtain one single prediction for each clip. Figure \ref{fig:speechtransformer} shows the full model.
+
+\begin{figure}[!h]
+    \centering
+    \input{graphics/speechtransformer}
+    \caption[SpeechTransformer Model]{The encoder part of the SpeechTransformer model. The figure is from \cite{zhao2019speechtransformer} but with our changes applied.}
+    \label{fig:speechtransformer}
+\end{figure}
+
+\section{Evaluation Metrics}
+
+Since all of our experiments are classification tasks we will always be tracking the accuracy of our model. Accuracy is simply defined as the number of correct predictions divided by the number of total predictions. We will also oftentimes be tracking the top-5 accuracy of our model which is calculated just like the accuracy but a correct prediction is counted when the correct class was in the top 5 highest scoring classes. This metric shows, especially in difficult, low-data domains, if the model is on the right track even when it is not confident about its predictions.
+
+\section{Implementation Details}
+
+To reduce variability in the same experiment but with different models, we tried to keep all hyperparameters the same. We pre-trained all \gls{claudio} networks using the Adam optimizer \cite{kingma2017adam} with an initial learning rate of $10^{-4}$ that reduces in a logarithmic fashion until it reaches $10^{-5}$ after 10 epochs. Since we found that \gls{sgd} with a momentum of 0.9 performs better in the transfer stage, we used this for all transfer and fully supervised runs. Again the learning rate is decreased accordingly from an initial one of $10^{-2}$ to $10^{-4}$. All convolutional and fully connected layers have an L2 regularizer with a factor of $10^{-4}$ as well as a batch normalization layer following it. The temperature parameter of the \gls{ntxent} loss was fixed at $0.1$. No dropout was used in any of the models. Table \ref{tab:augmentations} shows the hyperparameters used for the augmentation pipeline of the pre-training stage.
+
+\begin{table}[htpb]
+  \centering
+  \begin{tabular}{l c c c c}
+    \toprule
+        Augmentation & Probability & Parameter & Min & Max \\
+        \midrule
+        Crop & $1.0$ & Duration & 3 & 3 \\
+        Gain & $0.6$ & $\gamma$ & -10dB & 10dB \\
+        Whitenoise & $0.6$ & $\gamma$ & -40dB & -10dB \\
+        \multirow{2}{*}{Lowpass} & \multirow{2}{*}{0.6} & Cutoff & 100Hz & 2,000Hz \\
+        & & Order & 1 & 4 \\
+        \multirow{2}{*}{Highpass} & \multirow{2}{*}{0.6} & Cutoff & 400Hz & 10,000Hz \\
+        & & Order & 1 & 4 \\
+        Timestretch & $0.1$ & Factor & 0.7 & 1.3 \\
+        Pitchshift & $0.1$ & Factor & -600cent & 600cent \\
+    \bottomrule
+  \end{tabular}
+  \caption[Augmentation hyperparameters]{Hyperparameters of all augmentations used during contrastive pretraining.}\label{tab:augmentations}
+\end{table}
+
+We found that one bottleneck of our augmentations pipeline was the fact that we sequentially applied time-stretching and pitch-shifting. As mentioned earlier pitch-shifting is just an extension to time stretching and so the two can be combined. When both, time-stretching by a factor of $\alpha_1$ and pitch-shifting by a factor of $\alpha_2$ should be applied we can instead time-stretch by a factor of $\alpha_1 / \alpha_2$ and then resample to $fs_o \cdot \alpha_2$ where $fs_o$ is the original sampling frequency. Thus we get a final signal that is correctly stretched and shifted at only half the computational cost.
+
+The input shape of all models is fixed at 300 time-steps and 512 FFT-bins. To obtain this a basic \gls{stft} with a window size of 25ms and a step size of 10ms is used on 3-second crops. We use the hamming window function for all experiments.
+
+All code is written in python using various open-source libraries, most notably: NumPy \cite{harris2020array}, Pandas \cite{reback2020pandas}, SciPy \cite{2020SciPy-NMeth}, Librosa \cite{mcfee2015librosa} and TensorFlow \cite{tensorflow2015-whitepaper}. Training was done on a single \textit{NVIDIA RTX 2080 Ti}. Batch sizes varied between different models so that the 11GB of VRAM was always fully utilized.
+
+\section{Results}
+
+We present the quantitative results of all models on the three different datasets. We look primarily at the accuracy as well as the top-5 accuracy evaluation metric but we will also take a closer look at other metrics like training time, model sizes, memory consumption and convergence speed. We also compare the VGG-Vox model trained on a small portion of the VoxCeleb dataset towards results of comparable works as well as towards a fully supervised version of the same network and show a comparison of the triplet loss towards the \gls{ntxent} loss on the same dataset. All the results stated here are the maximally reached results for a particular experiment, denoted as percentages rounded to two decimal places. 
+
+In the end, we present qualitative results of the obtained latent representations of our framework by plotting 2,000 embeddings, dimensionality-reduced by \gls{tsne}.
+
+Table \ref{tab:model_comparison} shows the overall top-1 and top-5 accuracy of the three networks on the three datasets as well as on a portion of the VoxCeleb dataset, named VoxCeb50-20. This dataset consists of 20 examples per class of the first 50 classes of the VoxCeleb dataset. To restrict the dataset even further and make it comparable to the work of Anand et al. \cite{anand2019shot}, we expose only the first three seconds of each training sample to the network. In total, this results in 50 minutes of training data. The best result for a dataset is highlighted in bold numbers.
+
+\begin{table}[htpb]
+  \centering
+  \begin{tabular}{l l c c c c c c c c}
+    \toprule
+       & & \multicolumn{2}{c}{VoxCeleb50-20} & \multicolumn{2}{c}{Music} & \multicolumn{2}{c}{Birdsong} & \multicolumn{2}{c}{VoxCeleb} \\
+       \cmidrule(lr){3-4}
+       \cmidrule(lr){5-6}
+       \cmidrule(lr){7-8}
+        \cmidrule(lr){9-10}
+        & & Top-1 & Top-5 & Top-1 & Top-5 & Top-1 & Top-5 & Top-1 & Top-5 \\
+        \midrule
+        \multirow{2}{*}{VGG-Vox} & Superv. & 26.07 & 53.70 & 13.81 & \textbf{36.15} & 14.85 & 32.96 & \textbf{74.42} & \textbf{92.78} \\ 
+        & CL-Audio & \textbf{50.18} & \textbf{72.89} & \textbf{18.91} & 35.48 & \textbf{23.36} & \textbf{39.58} & 70.56 & 91.55 \\
+        \midrule
+        \multirow{2}{*}{LSTM} & Superv. & 15.38 & 41.02 & 3.55 & 10.01 & 13.67 & 30.09 & 65.41 & 87.85 \\
+        & CL-Audio & 35.18 & 65.91 & 11.25 & 30.85 & 16.69 & 39.18 & 55.27 & 81.59 \\
+        \midrule
+        \multirow{2}{*}{Transformer} & Superv. & 13.81 & 36.85 & 2.52 & 7.41 & 7.21 & 17.66 & 45.18 & 66.71 \\ 
+        & CL-Audio & 13.54 & 36.87 & 5.22 & 15.17 & 7.81 & 21.58 & 25.18 & 52.54 \\ 
+    \bottomrule
+  \end{tabular}
+  \caption[Model comparison results]{Top-1 and Top-5 accuracy of all models on each dataset trained using a supervised method and our method.}\label{tab:model_comparison}
+\end{table}
+
+It can be observed that the \gls{cnn} architecture outperforms all other network architectures by a large margin. We want to note that the big discrepancy in the VoxCeleb dataset is due to the fact this model is the one used by the creators of the dataset, meaning it already underwent a long series of optimization rounds to find optimal hyperparameters and network architecture fine-tuned to the VoxCeleb dataset, whereas the other two models are not fine-tuned towards this dataset. Nonetheless, it also outperforms the other architectures in the other datasets but by a smaller margin. Overall all models performed best on the full VoxCeleb dataset, which is to be expected as it has the most training data. Interestingly all models perform the worst on the music classification dataset. The \gls{lstm} and the SpeechTransformer model trained purely supervised completely failed to learn good representations, scoring only slightly higher than random, whereas the networks trained using \gls{claudio} scored at least 10\% and 11\% respectively. The observed top-5 accuracy on all experiments is very consistently around 3 times as high as the top-1 accuracy.
+
+Figure \ref{fig:capsule_result} shows the comparison of our method towards the results of Anand et al. \cite{anand2019shot} by plotting the maximum top-1 accuracies of all models as training samples per class increase on the VoxCeleb dataset limited to the first 50 classes.
+
+\begin{figure}
+    \centering
+    \input{figures/few_shot_capsule_result.pgf}
+    \caption[Comparison of models on different dataset sizes]{Test accuracy on 50 classes of VoxCeleb for different networks trained with different amounts of training data. Our method is in red. Orange line is reprinted from \cite{anand2019shot}. Green line is the supervised baseline.}
+    \label{fig:capsule_result}
+\end{figure}
+
+We clearly outperform all other methods up until 80 training examples per class. Using 20 training examples we outperform the Capsule Network by as much as 10.22\%. Note that we outperform the other networks with only as little as 10\% of the number of trainable parameters. Whereas our classification head only has 140,000 trainable parameters the capsule network has 16.7 million. This reduction in parameters obviously reduces the required memory for gradient computation by ~90\% and it enables training on devices with very small \glspl{gpu}. The results of the capsule network were not reproduced for this work but rather adopted from the original paper. To ensure consistency of the results we reproduced the results of the fully supervised VGG-based network and found almost a perfect match in performance compared to the results stated by \cite{anand2019shot}.
+
+\begin{figure}[t]
+  \centering
+  \begin{subfigure}[b]{0.49\linewidth}
+    \centering
+    \scalebox{0.6}{\input{figures/ntxent_vs_triplet_result.pgf}}
+    \caption{Comparison of loss functions}
+    \label{fig:nt_vs_triplet}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.49\linewidth}
+    \centering
+    \scalebox{0.6}{\input{figures/time_per_epoch.pgf}}
+    \caption{Comparison of training times}
+    \label{fig:times_per_epoch}
+  \end{subfigure}
+  \caption[Comparison of loss functions and models]{\textbf{Left}: Comparison of top-1 accuracies of a VGG-Vox model pre-trained using a NT-Xent loss and one using a triplet loss. Higher is better. \textbf{Right}: Comparison of the training time per epoch in minutes for all three models implemented for this thesis. Lower is better.}
+\end{figure}
+
+Next we compare two different loss functions for our learning framework. The results of the triplet and \gls{ntxent} loss function applied to the VGG-Vox network trained using the \gls{claudio} framework and transferred to the VoxCeleb dataset can be found in Figure \ref{fig:nt_vs_triplet}. We see that, consistent with the findings by Chen et al. \cite{chen2020simple}, \gls{ntxent} outperforms the standard triplet-loss by a margin of 20\%. Note that no hard-triplet mining was conducted during training with the triplet loss.
+
+Figure \ref{fig:times_per_epoch} shows the training time per epoch in minutes for the VGG-Vox, the \gls{lstm}-based network and the SpeechTransformer. The dataset used was the full VoxCeleb dataset, so one epoch corresponds to 145,265 utterances. The \gls{lstm} is the slowest of the three networks, as was to be expected.  Interestingly the SpeechTransformer is significantly faster than the VGG-Vox \gls{cnn}. One reason for this is the lower amount of trainable parameters, as shown in Table \ref{tab:model_comparison}. Since the maximum batch size for the SpeechTransformer was only 60, compared to 80 for the VGG-Vox and \gls{lstm}, there might even be more performance gains for this model with more VRAM.  Even though the SpeechTransformer trained fast we still do not believe that it is a feasible option due to the significantly worse accuracy it provided. We argue that with its good training time and strong accuracy the VGG-Vox model clearly outperforms the other two models.
+
+Now we look at the relevance of classification-head architecture. Table \ref{tab:classification_heads} shows various architectures, their respective number of trainable parameters and their top-1 accuracy on the VoxCeleb50-20 dataset. The number of neurons per layer is annotated as a tuple where the first entry represents the first layer’s neurons and the last entry represents the last layer’s neurons. All layers are initializers with a normal distribution. They are purely dense layers and use L2 kernel regularization, batch normalization and \gls{relu} activations. As can be clearly seen an increase in parameters does not correlate with an increase in accuracy. Only at very low parameterized models can we observe a decrease in performance. Additional layers actually decrease the performance of the model as a whole.
+
+\begin{table}[p]
+  \centering
+  \begin{tabular}{l c c}
+    \toprule
+        Shape & Top-1 Accuracy & Trainable weights \\
+        \midrule
+        {[1024]} & 41.25 & 1,104,946 \\
+        {[512]} & 43.78 & 553,522 \\
+        {[256]} & \textbf{50.18} & 277,811 \\
+        {[128]} & 46.91 & 139,954 \\
+        {[64]} & 45.51 & 71,026 \\
+        {[32]} & 33.14 & 36,562 \\
+        {[16]} & 26.28 & 19,331 \\
+        \midrule
+        {[1024,1024]} & 44.36 & 2,156,594 \\
+        {[1024,512]} & 47.39 & 1,605,170 \\
+        {[256,512]} & 47.19 & 423,218 \\
+        {[256,256]} & 45.76 & 344,114 \\
+        {[128,128]} & 46.28 & 156,722 \\
+        {[512,64]} & 40.11 & 564,082 \\
+        \midrule
+        {[1024,1024,1024]} & 42.30 & 3,208,242 \\
+        {[1024,512,256]} & 42.49 & 1,724,210 \\
+        {[512,256,128]} & 43.22 & 699,314 \\
+        {[256,512,128]} & 43.52 & 469,938 \\
+    \bottomrule
+  \end{tabular}
+  \caption[Comparison of classification head shapes]{Different classification head architectures. All heads are fully-connected networks. The shape describes the number of neurons per layer, where the leftmost number represents the first layer. Respective top-1 accuracies on VoxCeleb50-20 and number of trainable parameters of the head (rest of the model excluded).}
+  \label{tab:classification_heads}
+\end{table}
+
+Now we take a closer look at qualitative results in the form of latent representations of songs, created using a VGG-Vox network trained using \gls{claudio}. Figure \ref{fig:tsne} shows two scatterplots of these embeddings, reduced to 2-dimensions using \gls{tsne}. In Figure \ref{fig:tsne_artist}, the colors indicate different artists while in Figure \ref{fig:tsne_genre} the colors indicate genres. We can clearly see that the network distinguishes genre better than artists. One problem with our dataset might be the high percentage of rock artists and the considerably low percentage of classical artists. This explains the mediocre performance of the models on the artist classification dataset.
+
+\begin{figure}[t]
+  \centering
+  \begin{subfigure}[b]{0.49\linewidth}
+    \centering
+    \scalebox{0.45}{\input{figures/tsne1.pgf}}
+    \caption{Colors indicate Artists}
+    \label{fig:tsne_artist}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.49\linewidth}
+    \centering
+    \scalebox{0.45}{\input{figures/tsne2.pgf}}
+    \caption{Colors indicate Genres}
+    \label{fig:tsne_genre}
+  \end{subfigure}
+  \caption[t-SNE plots of music embeddings]{Randomly chosen clips from six artists of the music classification dataset embedded using a VGG-Vox pre-trained using CL-Audio. The embeddings are reduced to two dimensions using t-SNE.}
+  \label{fig:tsne}
+\end{figure}

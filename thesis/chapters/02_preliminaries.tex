@@ -1,0 +1,404 @@
+% !TeX root = ../main.tex
+
+\chapter{Preliminaries}\label{chapter:preliminaries}
+
+This chapter explains the most important preliminary knowledge required for this work. An in-depth analysis of all of the concepts explained in the remainder of this chapter would be out of scope for this thesis, therefore we limit it to a brief but concise overview. For the readers that are interested in gaining deeper insights we recommend the books "Scientist and Engineer's Guide to Digital Signal Processing" by Steven W Smith \cite{smith1997dsp} and "Deep Learning (Adaptive Computation and Machine Learning series)" by Ian J Goodfellow \cite{goodfellow2016deeplearning}.
+
+\section{Problem Formulation}\label{sec:problem_definition}
+
+Much of the success of deep learning comes from the availability of large, open datasets of high quality. There is a strong correlation between the release of such datasets and the increase in deep learning progress in its corresponding domain. The best example being \textit{ImageNet} \cite{imagenet_cvpr09} for image data. The major reason for this is the reproducibility and comparability of works on such datasets. Unfortunately, datasets of such quality and size do not yet exist for audio data. The datasets that do exist are usually of lower quantity and quality, so therefore training good neural networks is a difficult task. 
+
+The problem that we are trying to solve can be broken down into three subproblems: $i$) find a way to make use of unlabeled data to train a neural network in finding similarities in pairs of audio data, $ii$) explore ways to transfer the network trained in $i$ to another domain $iii$) show that by combining $i$ and $ii$ we can solve complex downstream classification tasks where only a few quantities of labeled training data exist.
+
+\section{Learning Paradigms}
+
+There exist many different learning paradigms in the realm of gradient-based machine learning today. In this section, we define and differentiate four of the most important paradigms for our work: \textit{Supervised Learning}, \textit{Self-Supervised Learning}, \textit{Contrastive Learning} and \textit{Transfer Learning}. We later describe how these paradigms can be combined to create new, sophisticated learning methods.
+
+Note that the modern literature of deep learning does not fully agree on the definition and differentiation of some of these terms, so for example some would call an approach unsupervised while others would call it self-supervised. We therefore try to use the most recent definitions of the terms and stick to them throughout this thesis but beware that other works might have slightly different definitions.
+
+\subsection{Supervised Learning}\label{subsec:supervised}
+
+Supervised learning is the most used and most successful learning paradigm for neural networks today. Its goal is to learn a mapping from unknown inputs to specific outputs based on a set of given input-output pairs called training data. In the case of classification, the outputs are called labels and can be seen as a certain input belonging to one of many predefined categories, e.g in the case of hand-written number-classification labels would be in the range of 0 to 9 where each label corresponds to the same number-category. Learning such a mapping is achieved by minimizing the discrepancy between the predicted label and the actual label. Equation \ref{eq:cce} shows such a target, usually called the loss function, using the de-facto standard function for classification called \gls{cce}.
+
+\begin{equation}
+    \label{eq:cce}
+    CCE(p,t) = - \sum_{c=0}^{N-1} t_{c} log(p_{c})
+\end{equation}
+
+$t_{c}$ denotes the actual probability that one input is of category $c$. $p_{c}$ is the probability a classifier assigns to an input being of category $c$. Often times the words category and class are used synonymously. In our case $t_{c}$ is a sparse vector where all entries are $0$ except for a $1$ at the position of the correct class. This is also known as a one-hot vector. Note that $p_{c}$ must be a probability, meaning $\sum_c p_{c} = 1$ and $p_{c} \in (0,1) \forall c$. So outputs of classifiers that are not probabilities, as is the case in most neural networks, must first be normalized. Usually, this is achieved using the softmax function, defined in Equation \ref{eq:softmax}, on the outputs. Here $z$ denotes a vector of size $K$, for example $p_{c}$ with $K = |c|$.
+
+\begin{equation}
+    \label{eq:softmax}
+    \sigma(z)_i = \frac{e^{z_i}}{\sum_{j=1}^K e^{z_j}}
+\end{equation}
+
+In fact this procedure is so common that today most deep learning frameworks implicitly apply softmax to the inputs of \gls{cce}.
+
+Simply by learning this mapping from predefined input-output pairs, a trained model can learn to correctly classify unknown inputs. A neural network can learn this mapping so well that in some cases it can outperform even humans. Because of its rather simplistic paradigm and its superb results, supervised learning has become the most used way to train neural networks today. Unfortunately, it requires a lot of data to generalize well and training a network on one specific task does not provide a good mapping for another task, even if the two tasks might be closely related. Since modern architectures usually contain billions of parameters that have to be tuned on incredibly large datasets, retraining a network for each task requires enormous resources, time and money. Other paradigms are required to mitigate this problem.
+
+\subsection{Self-Supervised Learning}\label{subsec:self_supervised}
+
+Self-supervised learning is a special case of unsupervised learning. In unsupervised learning, a model tries to find inherent patterns in a dataset without labels. An example of this is clustering or principal component analysis \cite{1901pca}. Self-Supervised learning has the same target as unsupervised learning but obtains labels from the data itself. This means that from one or many data points, a supervised task is generated, which is then evaluated in the same way a supervised system would be. Choosing the exact nature of this task is a critical part of self-supervised learning. There have been many proposed tasks for such systems but all fall into either one of two categories: generative or discriminative. An example of a generative task is proposed in Hossein et al. (2020) \cite{hosseini2020inceptioninspired} where the authors try to predict the next frames in a video by minimizing the \gls{mse} between an image generated by a neural network and the actual next frame. On the other hand, an example of a discriminative task is Gidaris et al. (2018) \cite{gidaris2018unsupervised}. Here the authors try to find the original image out of four rotated copies of that image. Discriminative methods, such as contrastive learning explained in \ref{subsec:contrastive_learning}, try to distinguish different kinds of inputs.
+
+In general the target in self-supervised learning is "a proxy task that forces the network to learn what we really care about" \cite{zisserman2018selfsupervised}. \textit{Word2Vec}, proposed by Mikolov et al. \cite{mikolov2013efficient}, though not called self-supervised by the authors, can be seen as such a system that, by predicting words in a sentence, is forced to learn a semantic representation of those words. In our case what we care about is a representation of audio input into a latent space where close distance is equivalent to a close semantic distance in the real world, e.g. perceived similarity in music or speech. We call this semantic distance the similarity of two data points.
+
+Figure \ref{fig:clusters} shows how we think of similarity in a made-up scenario of differentiating input images of certain categories. Close points in this two-dimensional plane are considered similar, while further away points are considered not similar. Therefore data of the same class should be mapped close together since they are of high similarity. Note that this similarity measure can vary from being strictly objective in the case of same speakers to highly subjective in the case of song genres. One can clearly see how this paradigm can be used to solve problem $i$ defined in \ref{sec:problem_definition}.
+
+\begin{figure}[t]
+    \centering
+    \scalebox{.6}{\input{figures/clusters.pgf}}
+    \caption[Latent space]{An example of a latent space where similar data points would be mapped closer together while not similar ones would be further apart.}
+    \label{fig:clusters}
+\end{figure}
+
+
+\subsection{Contrastive Learning}\label{subsec:contrastive_learning}
+
+The problem of learning similarity between a pair of inputs is a common problem in machine learning. This problem consists of three pieces: $i$\label{lst:cli}) A way to represent the data that is comparable by a machine, $ii$\label{lst:clii}) a notion of similarity in the target domain and $iii$\label{lst:cliii}) labels that describe the membership of each input to a certain class. Neural networks can be used to solve \hyperref[lst:cli]{$i$} by compressing the input signal into a dimensionality-reduced representation, without loosing too much information. For vectors, \hyperref[lst:clii]{$ii$} can be solved easily since there are several functions that compute distance or similarity for a pair of vectors. See section \ref{sec:ss_loss} for more details. As explained in section \ref{subsec:supervised} and \ref{subsec:self_supervised} labels required for \hyperref[lst:cliii]{$iii$} can be obtained either by human annotation or by creating a task that the machine can produce itself. Contrastive learning is a discriminative method that combines those three solutions to form a learning paradigm that learns to distinguish pairs of inputs by producing vectors that are either close or distant to each other. Figure \ref{fig:contrastive_learning} shows the general task of contrastive learning in the domain of image data.
+
+\begin{figure}[!h]
+    \centering
+    \input{graphics/contrastive_learning}
+    \caption[Contrastive Learning]{The general contrastive learning task in the domain of image data. Different images are fed through an encoder network that predicts whether or not two images are similar or not. Images are from \textit{ImageNet} \cite{imagenet_cvpr09}.}
+    \label{fig:contrastive_learning}
+\end{figure}
+
+As explained earlier labels can be created automatically using a self-supervised learning task. By combining self-supervised and contrastive learning it is possible to create a fully autonomous learning framework for similarities without the need for human annotation. This makes it possible to scale the training dataset to a much larger amount than in a fully supervised scenario. The way that we make use of this property is to create two augmented views from the same input and train the network to become invariant to those augmentations, meaning it will produce similar vectors for augmented views, but not for two completely unrelated views. This concept will be explained in more detail in Chapter \ref{chapter:claudio}.
+
+\subsection{Transfer Learning}
+
+Learning basic concepts first and applying those concepts to other tasks later on is an important part of deep learning research today. Transfer Learning can be seen as an extension to other learning paradigms that enables the transference of knowledge from one domain to another \cite{yang_zhang_dai_pan_2020}. A method for transfer learning of neural networks was proposed as early as 1993 by L. Y. Pratt \cite{NIPS1992_641} and is described in more detail in Algorithm \ref{alg:transfer}.
+
+The basic idea behind transfer learning is that a neural network $f \circ g$, where $f$ is an arbitrary network architecture called encoder network that outputs vectors and $g$ is a small fully connected network called classification head that takes in the outputs of $f$ and produces predictions in the target domain. This network can be trained on a dataset $(X,y)$, containing training inputs $X$ and training outputs $y$, for example, images and the class of the depicted object in each image. During training the network $f$ learns general low-level features of image recognition while $g$ learns to map those features to the desired output $y$.
+
+Now consider a second domain of image classification $(X',y')$ where $X'$ is of the same kind as $X$. Instead of training an entirely new network of the aforementioned structure, one can instead take the encoder network $f$ trained on the other dataset and transfer it into a new architecture $f \circ g'$ where $g'$ is a new classification head that takes in the outputs of $f$ and produces predictions in the new target domain $y'$. This is possible because the underlying data of both datasets share similar features, like edges and objects. The encoder network $f$ learns those features from the first dataset and transfers the knowledge to the second dataset. Shaha et al. \cite{shaha2018transfer} showed that using transfer learning on neural networks robust features can be transferred between multiple vision tasks. Figure \ref{fig:transfer_learning} shows this idea in a single diagram.
+
+\begin{figure}[t]
+    \centering
+    \input{graphics/transfer_learning}
+    \caption[Transfer Learning Overview]{The two stages of transfer learning. The encoder network is transferred after pre-training from the first domain to the second domain. Head is usually a small fully-connected network.}
+    \label{fig:transfer_learning}
+\end{figure}
+
+\begin{algorithm}
+    \caption{A supervised transfer-learning framework}
+    \label{alg:transfer}
+    
+    \begin{algorithmic}[1]
+        \State \textbf{Input:} encoder network $f$, classification heads $g$ and $g'$, trainable parameters  $\boldsymbol{\theta}_f$, $\boldsymbol{\theta}_g$, $\boldsymbol{\theta}_{g'}$, pre-training dataset $(X,Y)$, transfer dataset $(X', Y')$, loss functions $\mathcal{L}_{pre}$, $\mathcal{L}_{transfer}$, learning rate $\alpha$
+        \State Randomly initialize $\theta_f$ and $\theta_g$ \Comment{Stage 1: Pre-training}
+        \While{not done}
+            \State sample minibatch $(\boldsymbol{x},\boldsymbol{y}) \sim (X,Y)$
+            \State compute $\mathcal{L}_{pre}$ from $g(f(\boldsymbol{x}))$ and $\boldsymbol{y}$
+            \State $\boldsymbol{\theta}_{f \circ g} \gets \boldsymbol{\theta}_{f \circ g} - \alpha \nabla_{\theta_{f \circ g}} \mathcal{L}_{pre}$ \Comment{$\theta_{f \circ g}$ is the concatenation of $\theta_f$ and $\theta_g$}
+        \EndWhile
+        \State Randomly initialize $\boldsymbol{\theta}_{g'}$ \Comment{Stage 2: Transfer}
+        \State freeze $\boldsymbol{\theta}_f$
+        \While{not done}
+            \State sample minibatch $(\boldsymbol{x'},\boldsymbol{y'}) \sim (X',Y')$
+            \State compute $\mathcal{L}_{transfer}$ from $g'(f(\boldsymbol{x'}))$ and $\boldsymbol{y'}$
+            \State $\boldsymbol{\theta}_{f \circ g'} \gets \boldsymbol{\theta}_{f \circ g'} - \alpha \nabla_{\theta_{f \circ g'}} \mathcal{L}_{transfer}$
+        \EndWhile
+        \State \textbf{return} $f \circ g'$
+    \end{algorithmic}
+\end{algorithm}
+
+The need for transfer learning arises when the domain to be transferred to has little or no training data or when making mistakes in unknown situations is expensive, as is the case in self-driving cars \cite{fellicious2018transfer}. In our case transfer learning will be used to take the latent representations learned from self-supervision and apply them to downstream supervised tasks with low amounts of available training data. This approach is very common and has shown good results in recent years (\cite{dosovitskiy2015discriminative, oord2019representation, bachman2019learning}). A thorough survey of modern transfer learning techniques can be found in Pan et al. (2010) \cite{pan2010transfer}.
+
+\section{Self-Supervised Loss Functions}\label{sec:ss_loss}
+
+Expressing the similarity of entities in the real world is effortless for humans. Be it sound events, images, words, all can easily be compared to other entities of that same domain. For machines this task is different. Since understanding similarity involves a lot of contextual knowledge that machines do not possess, the question if two entities are similar becomes much harder to answer for an algorithm. Self-supervised learning tries to bridge that knowledge gap by transforming complex real-world entities into a more simple representation that a machine can process. This representation is usually in the form of vectors. There are many ways of calculating the similarity of two vectors. Equations \ref{eq:euclidian_distance}, \ref{eq:manhattan_distance}, \ref{eq:cosine_similarity} describe three of the most common distance measures for vectors: \textit{euclidian distance}, \textit{manhattan distance} and \textit{cosine similarity}. Note that $s_{cosine}(p,q)$ is actually a similarity metric where $1$ is equal to the most similarity and $-1$ to the least similarity. One can simply convert it to a distance: $d_{cosine}(p,q) = 1 - s_{cosine}(p,q)$, but this is commonly not used. It is called cosine similarity because the result matches the cosine of the angle between the two vectors.
+
+\begin{equation}
+   d_{euclidian}(\mathbf{p},\mathbf{q}) = \lVert \mathbf{p,q} \rVert_2 = \sum_{i=1}^{n} \sqrt{(p_i - q_i)^2},\;\;\; \in \mathbb{R}^+
+   \label{eq:euclidian_distance}
+\end{equation}
+
+\begin{equation}
+   d_{manhattan}(\mathbf{p},\mathbf{q}) = \lVert \mathbf{p,q} \rVert_1 = \sum_{i=1}^{n} |p_i - q_i|,\;\;\;\;\;\;\; \in \mathbb{R}^+
+   \label{eq:manhattan_distance}
+\end{equation}
+
+\begin{equation}
+   s_{cosine}(\mathbf{p},\mathbf{q}) = \frac{\mathbf{p} \cdot \mathbf{q}}{\lVert \mathbf{p} \rVert \lVert \mathbf{q} \rVert} = \frac{\sum_{i=1}^{n}p_i q_i}{\sqrt{\sum_{i=1}^{n}p_i^2} \sqrt{\sum_{i=1}^{n}q_i^2}},\;\;\; \in [-1,1]
+   \label{eq:cosine_similarity}
+\end{equation}
+
+In the following subsections we look at two loss functions that implement these distance metrics to give self-supervised algorithms a way to learn good vector representations. A loss function is a mathematical way of expressing a certain target for a neural network to train towards to. Stochastic gradient descent works by minimizing this loss function over time using stochastically sampled batches of data.
+
+\subsection{Triplet Margin Loss}\label{subsec:tirplet}
+
+As the name suggests the \textit{Triplet Margin Loss} requires triplets of input data points. These data points are called anchor $A$, positive $P$ and negative $N$. The positive is supposed to be of high similarity to the anchor, whereas the negative is supposed to be of no or low similarity to the anchor. Equation \ref{eq:triplet_loss} describes this notion in mathematical terms.
+
+\begin{equation}
+   \mathcal{L}(A,P,N) = max\Big( \lVert f(A), f(P) \rVert_2 - \lVert f(A), f(N) \rVert_2 + \alpha, 0 \Big)
+   \label{eq:triplet_loss}
+\end{equation}
+
+This loss becomes larger the higher the distance between $A$ and $P$ and the lower the distance between $A$ and $N$. 
+Here the euclidean distance is used but any distance function can be applied. By minimizing this loss the network is forced to learn representations that increase the distance to $N$ and decrease the distance to $P$, relative to $A$. Figure \ref{fig:triplet_training} shows how such representations could look like before and after learning. Note that usually a margin hyperparameter $\alpha$ is used to better distinguish positive from negatives, it’s effect can be seen in \ref{subfig:triplet_after}.
+
+\begin{figure}[h!]
+  \centering
+  \begin{subfigure}[b]{0.49\linewidth}
+    \centering
+    \scalebox{0.75}{\input{graphics/triplet_before}}
+    \caption{Before training}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.49\linewidth}
+    \centering
+    \scalebox{0.75}{\input{graphics/triplet_after}}
+    \caption{After training}
+    \label{subfig:triplet_after}
+  \end{subfigure}
+  \caption[Triplet loss example]{\textbf{Left}: Potential latent representations of input data points before training. They are mapped randomly into the latent space with no clear boundary. \textbf{Right}: After training with the triplet loss representations of the same class are pulled together while other classes are pushed apart. A margin zone, controlled by the margin hyperparameter, separates uncorrelated samples from correlated ones.}
+  \label{fig:triplet_training}
+\end{figure}
+
+Since its first proposal in 2009 by Weinberger et al. \cite{Weinberger09distancemetric} the triplet loss is one of the most used loss functions for self-supervised learning. One major drawback of triplet loss is the fact that for randomly chosen inputs the loss approaches 0 very quickly since for most randomly chosen inputs $d(A,N) > d(A,P)$. These examples become irrelevant for training once this threshold is reached. Therefore a novel technique called online hard negative triplet mining was introduced by Schroff et al. \cite{Schroff_2015}. Online hard negative triplet mining ensures consistently increasing difficulty of triplets as the network trains but it requires one to track all comparisons and build up a memory bank that stores previous results. This is very inefficient and therefore more modern approaches try to replace it with simpler and more effective methods.
+
+\subsection{Normalized Temperature-Scaled Cross Entropy}\label{subsec:ntxent}
+
+\gls{ntxent} loss was first proposed by Sohn in 2016 \cite{sohn2016improved} but was coined \textit{NT-Xent} only recently by Chen et al. \cite{chen2020simple}. It was found that triplet loss functions "often suffer from slow convergence and poor local optima, partially due to that the loss function employs only one negative example while not interacting with the other negative classes per each update" \cite{sohn2016improved}. To deal with this issue, \gls{ntxent} loss takes one positive example and multiple negative examples per training step. The loss is defined as follows:
+
+\begin{equation}
+   \ell(i,j) = -\log \tfrac{\exp(s_{i,j}/\tau)}{\sum_{k=1}^{2N} \mathbb{1}_{[k \neq i]} \exp(s_{i,k} / \tau)}
+   \label{eq:ntxent_loss}
+\end{equation}
+
+Here $\mathbb{1}$ is the indicator function which evaluates to 1 only if $k \neq i$ (the similarity of an input to itself is always 1 and therefore discarded). Usually for this loss $s_{i,j}$ denotes the cosine similarity of two vector representations but any similarity measure can be used. $\tau$ is a temperature hyperparameter used to expand the range of the exponential. This helps in stabilizing training. One can clearly see that this loss closely resembles a softmax distribution trying to maximize agreement of similar pairs.
+
+The \gls{ntxent} loss has gained a lot of popularity since the release of \gls{simclr} (\cite{tu2020aag}, \cite{giorgi2020declutr}, \cite{apoorv2020speechembeddings}), mainly due to it scaling well to large batch sizes. This can be leveraged by ever-increasing memory sizes in deep learning specific processing units and better distribution strategies. Because of this and the fact that it does not require explicit example mining, we believe that \gls{ntxent} will replace triplet loss in most applications for self-supervised learning.
+
+\section{Neural Networks for Audio Data}\label{sec:nn_audio}
+
+Vibration is a repetitive motion relative to an equilibrium point \cite{nopdanai2017vibration}. Sound is therefore the vibration of molecules, usually air molecules, that is picked up by our ears and transformed into electrical signals that are then perceived by our brains. A similar thing happens when we try to digitize sound. First, a transducer converts sound into an electrical signal. This continuous signal is then transformed into a discrete signal by an \textit{Analog-to-digital converter} (ADC). The signal is periodically quantized to create a stream of samples. This way of digitally representing an analog signal is called \gls{pcm}.
+
+Quantization maps a certain amplitude of an analog signal to a digital integer value, represented as a sequence of bits. The higher the number of bits per integer, also known as the bit-depth, the lower the error introduced by quantization. The frequency of this quantization is called the sampling frequency, usually denoted in kHz. The sampling frequency and the quantization error are the major factors of the quality of the digital audio signal. The higher the sampling rate and the bit-depth, the better the quality, but the more space is required to store the audio. In today's recordings, a sampling rate of 44.1kHz and a bit-depth of 16bit is most commonly used.
+
+The resulting sequence of integer values can then be fed into a neural network for further processing. Unfortunately, classical network architectures are practically limited by the number of input values. A fully connected network with a single hidden layer consisting of 2048 hidden neurons would require more than 270 million weights to process a 3-second audio clip sampled at 44.1kHz. Nowadays it is common to make use of the time-series quality of audio data and use architectures that are specialized in this domain as shown in Lezhenin et al. \cite{lezhenin2019urban} or Zhao et al. \cite{zhao2019speechtransformer}.
+
+Another common approach is to exploit the local dependency of samples in an audio signal by first applying convolutional layers to reduce the input dimensionality while preserving as much information as possible. It was also found that fully convolutional networks can produce remarkable results without any need for time-dependent computation \cite{fu2017raw}. Most of the architectures used today are combinations of the three. All of these network types can be used with one-dimensional data, as most recently shown in \cite{dhariwal2020jukebox} but are more often used with two-dimensional inputs. We therefore always transform our input signal using the Short-time Fourier transform described in \ref{sec:fft} to create a two-dimensional matrix where $x_{i,j}$ represents the $i$th Fourier coefficient at timestep $j$. This process reduces the number of timesteps significantly and thus reduces the size of the networks. The final goal is to produce a single vector that best describes the data it is trying to represent. In the remaining subsections, we dive deeper into the theory of all three architectures.
+
+\subsection{Convolutional Neural Network}
+
+The kernel convolution for two-dimensional inputs used in a \gls{cnn} is defined in Equation \ref{eq:kernel_convolution} for discrete inputs.
+
+\begin{equation}
+   g(x,y) = \omega * f(x,y) = \sum_{dx=-a}^a \sum_{dy=-b}^b \omega (dx,dy) f(x + dx, y + dy)
+   \label{eq:kernel_convolution}
+\end{equation}
+
+Here $\omega$ is the kernel matrix ranging from $[-a,-b]$ to $[a,b]$. $f(x,y)$ is a pixel of an input image $f$. The kernel $\omega$ is shifted over the two dimensions $x$ and $y$ of $f$ and repeatedly multiplied with a part of the input image centered around $f(x,y)$. In the end, the resulting output pixels $g(x,y)$ are put back together to produce a filtered output $g$. Note that the kernel does not have to move one pixel at a time but can move any desired distance per step. This distance is called stride. If the stride is larger than 1, the size of the output image is reduced.
+
+The kernel matrix is composed of learnable weights. Training such a network using backpropagation was first proposed by LeCun et al. in 1989 \cite{lecun1989backpropagation} and has since seen magnificent results in image-related tasks but also in other domains like audio.
+
+The advantage of this compared to fully connected layers is that the size of the kernel matrix is not determined by the size of the input, so larger input matrices do not necessarily require more trainable weights. This kernel convolution is usually followed by a non-linear activation function. The most prominent activation function for \glspl{cnn} is the \gls{relu}, proposed by Hinton et al. \cite{icml2010relu} and denoted in Equation \ref{eq:relu}.
+
+\begin{equation}
+   f(x)= 
+    \begin{cases}
+        x,& \text{if } x\ge 0\\
+        0,              & \text{otherwise}
+    \end{cases}
+   \label{eq:relu}
+\end{equation}
+
+Due to its non-saturating gradient, it accelerates stochastic gradient-based learning, as opposed to alternatives like sigmoid or tanh \cite{NIPS2012_4824}. Note that this comes with a drawback that neurons can potentially die out, meaning they can enter states that produce negative outputs for all inputs and therefore never produce any gradient other than 0. There exist many alternatives that mitigate this issue, like the \textit{leaky ReLU} that assigns small values for inputs lower than zero, so therefore always producing some gradient. In practice, however, this problem is often ignored since large networks can cope with a few dead neurons.
+
+To further reduce dimensionality to subsequent layers, \glspl{cnn} commonly employ pooling after each convolution step. As evaluated in Scherer et al. \cite{scherer2010maxpool}, max-pooling, which returns the maximum value of a given receptive field, is vastly superior to other pooling techniques. Figure \ref{fig:cnn} shows a single stack of convolution, \gls{relu} and max-pooling layers. In practice, there are many such stacks combined to produce a condensed set of features that best describes the given input and that can be used for further downstream tasks such as classification.
+
+\glspl{cnn} for time series classification were first introduced by Wang et al. in 2017 \cite{wang2016time}. They form a strong baseline, that is difficult to beat on arbitrary data without heavy fine-tuning to a specific task. Even though \glspl{cnn} are extremely powerful in finding local dependencies in data, they fail to learn dependencies that are far apart. This is due to the kernel convolution only looking at specific areas of the input one at a time.
+
+\begin{figure}[!h]
+    \centering
+    \input{graphics/cnn}
+    \caption[Convolution, ReLU and max-pool overview]{A single stack of a convolutional, ReLU and max-pooling layer. First $n$ filters are convoluted with the input, resulting in $n$ output channels. All output channels are then fed through a ReLU and finally max-pooled to further decrease the output size.}
+    \label{fig:cnn}
+\end{figure}
+
+\subsection{Long Short-Term Memory}\label{subsec:lstm}
+
+\gls{lstm} is a type of \gls{rnn} used for processing time-series data. It was first proposed by Hochreiter and Schmidhuber in 1997 \cite{hochreiter1997lstm}. A common problem for pre-LSTM \glspl{rnn} was to learn long-term temporal dependencies due to exponentially decaying gradients over time. To mitigate this issue \gls{lstm} employs a series of gates, described in Equation \ref{eq:lstm_forget} to \ref{eq:lstm_hidden}, that regulate the memory state of a cell.
+
+\begin{equation}
+   \mathbf{f}_t = \sigma (\mathbf{W}_f \mathbf{x}_t + \mathbf{U}_f \mathbf{c}_{t-1} + \mathbf{b}_f)
+   \label{eq:lstm_forget}
+\end{equation}
+
+\begin{equation}
+   \mathbf{i}_t = \sigma (\mathbf{W}_i \mathbf{x}_t + \mathbf{U}_i \mathbf{c}_{t-1} + \mathbf{b}_i)
+   \label{eq:lstm_input}
+\end{equation}
+
+\begin{equation}
+   \mathbf{o}_t = \sigma (\mathbf{W}_o \mathbf{x}_t + \mathbf{U}_o \mathbf{c}_{t-1} + \mathbf{b}_o)
+   \label{eq:lstm_output}
+\end{equation}
+
+\begin{equation}
+   \mathbf{c}_t = \mathbf{f}_t \circ \mathbf{c}_{t-1} + \mathbf{i}_t \circ tanh (\mathbf{W}_c \mathbf{x}_t + \mathbf{b}_c)
+   \label{eq:lstm_context}
+\end{equation}
+
+\begin{equation}
+   \mathbf{h}_t = \mathbf{o}_t \circ tanh (\mathbf{c}_t)
+   \label{eq:lstm_hidden}
+\end{equation}
+
+Here $\sigma$ denotes the sigmoid function and $\circ$ denotes the element-wise vector multiplication. $\mathbf{x}_t \in \mathbb{R}^d$ is the input at time-step $t$, $ \mathbf{h}_t \in \mathbb{R}^h$ is the outputted hidden state at timestep $t$. $\mathbf{W}$, $\mathbf{U} \in \mathbb{R}^{h \times d}$ are traininable weights and $\mathbf{b} \in \mathbb{R}^h$ are trainable biases. $\mathbf{f}_t, \mathbf{i}_t, \mathbf{o}_t \in \mathbb{R}^h$ are intermediate vectors called gates. Figure \ref{fig:lstm_cell} shows how the different gates interact. At its core the cell state is described by Equation \ref{eq:lstm_context}: a new state $ \mathbf{c}_t$ is the sum of two terms. The first term $\mathbf{f}_t \circ  \mathbf{c}_{t-1}$ includes the forget gate $ \mathbf{f}_t$, which regulates when old state should be forgotten, while the second term $ \mathbf{i}_t \circ tanh ( \mathbf{W}_c  \mathbf{x}_t +  \mathbf{b}_c)$ includes the input gate $ \mathbf{i}_t$, which regulates when new information should be remembered.
+
+\begin{figure}[!h]
+    \centering
+    \input{graphics/lstm_cell}
+    \caption[LSTM cell Overview]{The flow through a LSTM cell. The last hidden state $h_t$ is used as the latent representation of the input.}
+    \label{fig:lstm_cell}
+\end{figure}
+
+In Hinton et al. \cite{graves2013speech} the authors showed that \glspl{lstm} can be successfully used on audio data. But even though its performance on long time temporal dependencies is really strong, its computational speed is not as efficient as the other methods described in this section. This comes from the fact that a \gls{lstm} cell state $ \mathbf{c}_t$ depends on the previous cell state $ \mathbf{c}_{t-1}$. This makes the parallelization of \glspl{rnn} impossible and so the benefits of modern deep learning hardware cannot be leveraged.
+
+\subsection{Self-Attention}
+
+Self-Attention networks have gained a lot of popularity in the last two years mostly resulting from the success of Transformers in \gls{nlp}. This architecture was first proposed in the paper called "Attention is all you need" \cite{NIPS2017_7181}. The \textit{Transformer} is an encoder-decoder based architecture for sequence data that is not reliant on any recurrence whatsoever. This makes the model extremely parallelizable which in turn resulted in huge models being trained on big GPU-clusters in parallel \cite{brown2020language}. The results of these models raised the bar for state of the art models in almost all \gls{nlp} tasks by a significant amount. Figure \ref{fig:attention_mha} shows the Scaled Dot-Product Attention (often just called self-attention) and the \gls{mha}, both proposed by Vaswani et al. in the original \textit{Transformer} paper \cite{NIPS2017_7181}.
+
+\begin{figure}[h!]
+  \centering
+  \begin{subfigure}[b]{0.49\linewidth}
+    \centering
+    \scalebox{1.0}{\input{graphics/attention}}
+    \caption{Scaled Dot-Product Attention}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.49\linewidth}
+    \centering
+    \scalebox{1.0}{\input{graphics/mha}}
+    \caption{Multi-Head-Attention}
+  \end{subfigure}
+  \caption[Scaled Dot-Product Attention and Multi-Head-Attention]{The basic components of a self-attention block. In practice multiple Attention-blocks are stacked onto each other to produce better representations. Figures are from the original Transformer paper \cite{NIPS2017_7181}.}
+  \label{fig:attention_mha}
+\end{figure}
+
+Self-attention is a mechanism in which each input of a sequence can compute a certain relationship to each other input. The input of the scaled dot product attention is a linear transformation of the inputs with three different, learnable matrices, called query, key and value. All three matrices have the same output dimension. \gls{mha} extends this concept by applying multiple such self-attention computations in parallel and concatenating the results. \gls{mha} is usually preceded and followed by linear transformations. Just like multiple kernel matrices in the same convolutional layer, \gls{mha} allows the network to learn multiple representations of the input at the same time, thus decreasing the probability that information is lost.
+
+\section{Fast Fourier Transformation}\label{sec:fft}
+
+\begin{figure}[t]
+    \centering
+    \input{figures/dft.pgf}
+    \caption[Discrete Fourier Transform]{\textbf{Top:} A signal consisting of two sinusoids of $500Hz$ and $2,000Hz$. \textbf{Bottom:} The same signal transformed into the frequency domain using DFT.}
+    \label{fig:dft}
+\end{figure}
+
+The inputs to our encoder models are not raw samples of audio data but rather spectrograms of it. To understand what spectrograms are one first has to know about the Fourier transformation. The Fourier transformation is the most widely used method to break down a non-periodic signal into its individual components. In fact, all mammal ears do something quite similar to it \cite{smith1997dsp}. The basic idea behind this transformation is that any signal can be represented by the sum of different sine and cosine waves. The equation of the complex Fourier transformation for discrete signals, called \gls{dft} is shown in Equation \ref{eq:dft}.
+
+\begin{equation}
+    \label{eq:dft}
+    F[j] = \sum_{k=0}^{N-1} f[k]e^{-i 2 \pi k j / N},\quad 0 \leq j \leq N - 1
+\end{equation}
+
+Where $f$ is an input signal of length $N$. The results $F[j]$ are complex numbers that can be seen as the amount that a specific sinusoid with frequency $j$ contributes to the signal. It is often called the Fourier coefficient. The real part of this coefficient, the magnitude of the corresponding sinusoid, will be the input to our models, while the imaginary part, the phase, will be discarded. We chose this input representation because we believe that it most similarly resembles the way that our brains perceive sound. In fact, the ear's basilar membrane inside the cochlea contains around 12 thousand sensory cells that function as frequency detectors, just like the coefficients of a Fourier transformation would. A visualization of this can be seen in Figure \ref{fig:dft} in the case of a signal consisting of two sinusoids of $500Hz$ and $2,000Hz$ respectively. One can see that once converted into the frequency domain, both individual frequencies become clearly visible.
+
+To convert back from the frequency domain to the time domain one can use the inverse Fourier Transformation shown in Equation \ref{eq:idft}. Note that both representations contain the same information, therefore one can freely convert between the two.
+
+\begin{equation}\label{eq:idft}
+    f[j] = \frac{1}{N} \sum_{k=0}^{N-1} F[k]e^{i 2 \pi k j / N},\quad 0 \leq j \leq N - 1
+\end{equation}
+
+Here $F$ is a sequence of complex numbers of length $N$ like the result of a \gls{dft} and $f$ is the original signal back in the time domain.
+
+Since the default \gls{dft} has a complexity $O(n^2)$, most commonly the \gls{fft} is used to calculate the \gls{dft}. It achieves the same result in $O(n \log n)$. Algorithm \ref{alg:fft} shows the procedure for a basic \gls{fft}.
+
+\begin{algorithm}[htbp]
+  \caption{Fast Fourier Transform}
+  \label{alg:fft}
+  \begin{algorithmic}[1]
+  \State \textbf{Input:} Complex input samples $X$ of length $N$ where $N$ is a power of 2
+  \State{$bit\_reverse(X)$}
+	\ForAll{$s \in \{1, ..., log(N)\}$}
+		\State{$m \gets 2^s$}
+		\State{$w_m \gets e^{-2\pi i / m}$}
+		\ForAll{$k \in \{0,m,2m,...,N-1\}$}
+			\State{$w \gets 1$}
+			\ForAll{$j \in \{0,1,...,\frac{m}{2}-1\}$}
+			    \State{$t \gets X[k+j + \frac{m}{2}]$}
+			    \State{$u \gets X[k+j]$}
+			    \State{$X[k+j] \gets u + t$}
+			    \State{$X[k+j+m/2] \gets u - t$}
+			    \State{$w \gets w \cdot w_m$}
+			\EndFor
+		\EndFor
+	\EndFor
+	\State \textbf{return} $X$
+  \end{algorithmic}
+\end{algorithm}
+
+To model the change of magnitudes of the frequencies over time, we employ a method called \gls{stft}, which splits the full signal into overlapping frames and then applies the \gls{fft} to each frame respectively. This results in a matrix of shape $[t, f]$, also called spectrograms, where each entry is the magnitude of the frequency $f$ in frame $t$. A plot of such a spectrogram can be seen in Figure \ref{fig:spectrogram}.
+
+\begin{figure}[htbp]
+    \input{figures/spectrogram.pgf}
+    \centering
+    \caption[Spectrogram example]{\textbf{Top:} A 4 second audio signal sampled at 16kHz. \textbf{Bottom:} The spectrogram of the same signal created using STFT with no overlap and a window size of 1024.}
+    \label{fig:spectrogram}
+\end{figure}
+
+In a discrete signal the number of Fourier coefficients, also called FFT-bins, is determined by the number of samples collected, while the frequency resolution of each bin is determined by the sampling rate of the signal and the number of bins. Equation \ref{eq:fft_tempresolution} and \ref{eq:fft_binresolution} show the relationship between the different parameters.
+
+\begin{equation}\label{eq:fft_tempresolution}
+    N = \frac{|x|}{2}
+\end{equation}
+
+\begin{equation}\label{eq:fft_binresolution}
+    \Delta_{bin} = \frac{fs}{N}
+\end{equation}
+
+Here $N$ is the number of FFT-bins, $|x|$ is the number of samples. $\Delta_{bin}$ is the size per FFT-bin in Hz and $fs$ is the sampling rate of the signal in Hz. The smaller $N$ the better the time resolution. The smaller the bin size the better the frequency resolution. One can see that there always exists a trade-off between frequency resolution and time resolution. If we decrease the number of samples per frame of the \gls{stft} we get a better temporal resolution but therefore a worse frequency resolution. It is important to choose good parameters that fit the need of the task. The more exact frequency differentiation, the weaker the temporal differentiation becomes. For our task, a well-balanced resolution in both domains is required.
+
+\section{Filters}
+
+We make use of filters to create augmented views of the input data before feeding it into the neural network. Filters are one of the most important parts of \gls{dsp}. Their applications range from telecommunication to computer graphics \cite{FILTERSWEB07}. An abstract view of two of the most important types of filters, called \textit{low-pass} and \textit{high-pass} filters can be seen in Figure \ref{fig:lphp}. The frequencies in the passband are the ones that should not be altered by the filter while frequencies in the transition band should be linearly reduced and frequencies in the stopband should be removed entirely. As can be seen in Figure \ref{fig:lphp} a low-pass filter stops all frequencies above the transition band, while a high-pass filter stops all below it.
+
+\begin{figure}[htbp]
+    \centering
+    \input{figures/lowpass_highpass.pgf}
+    \caption[]{\textbf{Left:} Abstract illustration of a \textit{low-pass} filter. \textbf{Right:} Abstract illustration of a \textit{high-pass} filter}
+    \label{fig:lphp}
+\end{figure}
+
+
+Figure \ref{fig:filter_responses} shows how the same filter can be represented in time and in the frequency domain. The frequency response describes how the filter will affect the individual frequencies of an incoming signal. In this example, frequencies above 100Hz will be cut off linearly. The impulse response is the actual signal of the filter in the time domain. Applying a filter in the frequency domain can be achieved by multiplying an input’s frequency spectrum and the filter’s frequency response. It can be easily seen why multiplication will have the desired effect of removing all frequencies in the stopband while preserving all frequencies in the passband.
+
+\begin{figure}[htbp]
+    \centering
+    \input{figures/filter_responses.pgf}
+    \caption[Low-pass filter responses]{\textbf{Top:} Time-domain signature of a low-pass filter called the "Impulse response". \textbf{Bottom:} Frequency-domain signature of a low-pass filter called the "Frequency response".}
+    \label{fig:filter_responses}
+\end{figure}
+
+It can be proven that multiplication in the frequency domain is equivalent to convolution in the time domain \cite{mcgillem1991continuous}. The convolution operation for two finite sequences $f$ and $g$ is defined in Equation \ref{eq:convolution}
+
+\begin{equation}\label{eq:convolution}
+    (f * g)[n] = \sum_{m=-M}^M f[n-m]g[m]
+\end{equation}
+
+So therefore in order to apply a filter in the time domain, one has to convolve an incoming signal with the impulse response of the filter. Figure \ref{fig:lp_effect} shows how the time domain and the frequency domain are impacted when a signal is fed through a low-pass filter.
+
+\begin{figure}[htbp]
+    \centering
+    \input{figures/lowpass_effect.pgf}
+    \caption[Filter demonstration]{A 500 Hz + 2000 Hz sinusoid in blue and the same signal low-pass-filtered at 1000 Hz in red. \textbf{Top:} Time domain. \textbf{Bottom:} Frequency domain.}
+    \label{fig:lp_effect}
+\end{figure}
+
+\newpage
+
+\section{Phase Vocoder}\label{sec:phase_vocoder}
+
+Another augmentation that we want to apply is to speed up or slow down an audio clip. A trivial approach to speeding up an audio signal would be to skip every other sample while preserving the sampling rate of the signal. In fact this approach does have the desired effect of speeding up the signal but also changes the frequency of the signal. The Phase Vocoder proposed by Flanagan et al. in 1966 \cite{flanagan1966phasevocoder} is an algorithm that achieves scaling in the time domain without changing the frequency domain \cite{portnoff20005timescale}. At its core, the phase vocoder is made of three stages. \textit{Analysis}, \textit{Processing} and \textit{Synthesis}. Figure \ref{fig:phase_vocoder} shows a basic overview of the different stages of the phase vocoder.
+
+\begin{figure}[h!]
+    \centering
+    \input{graphics/phase_vocoder}
+    \caption[Phase Vocoder Overview]{Basic overview of the phase vocoder algorithm. In the "Analysis Stage" raw samples are being transformed into the frequency domain using a window function and STFT. Then in the "Processing Stage" the audio is perturbed as required and in the "Synthesis Stage" raw samples are reconstructed from the perturbed STFT-frames using the inverse STFT.}
+    \label{fig:phase_vocoder}
+\end{figure}
+
+The analysis stage leverages the \gls{stft} \cite{MOULINES1995175}, described in Section \ref{sec:fft}, to split the signal into multiple frames. In the processing stage the signal can be perturbed in any desired way, e.g. the overlap between frames can be increased or decreased to achieve time-stretching. After that, in the synthesis stage, the signal is restored by applying the inverse \gls{stft} to the altered frames. Unfortunately, this naive method of time-stretching introduces unwanted artifacts in the output signal. This results from the fact that the relationship between phase and time is linear \cite{MOULINES1995175} and stretching changes the time domain of the signal. Therefore phase at each frame for each frequency must be adjusted accordingly by subtracting the propagating phase from one time-step to another. This adjustment of phase over time yields good results but is known to be imperfect \cite{prusa2017phasevocoder}. To this day finding better solutions to this problem is an ongoing field of research.

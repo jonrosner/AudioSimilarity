@@ -1,0 +1,119 @@
+\begin{tikzpicture}
+    \definecolor{red}{RGB}{219, 50, 54}
+    \definecolor{yellow}{RGB}{244, 194, 13}
+    \definecolor{blue}{RGB}{72, 133, 237}
+    \definecolor{green}{RGB}{60, 186, 84}
+    \definecolor{orange}{RGB}{230, 122, 22}
+    \definecolor{purple}{RGB}{145, 91, 145}
+    \definecolor{grey}{RGB}{211, 211, 211}
+    
+    \tikzstyle{a}=[thick, rounded corners]
+    \tikzstyle{attention}=[thick, rounded corners, minimum width=4.5cm]
+    
+    \tikzmath {
+        \dbox = 0.75;
+        \dTxtLinear = 0.9;
+        \dTxt = 1.7;
+        \dLinears = 0.1;
+        \dLayers = 1.2;
+    }
+
+    % QKV
+    
+    \coordinate (q_txt_c) at (0,0);
+    \node[] (q_txt) at (q_txt_c) {$Q$};
+    
+    \coordinate (k_txt_c) at ($(q_txt_c) + (\dTxt, 0)$);
+    \node[] (k_txt) at (k_txt_c) {$K$};
+    
+    \coordinate (v_txt_c) at ($(k_txt_c) + (\dTxt, 0)$);
+    \node[] (v_txt) at (v_txt_c) {$V$};
+    
+    % Linear
+    
+    \coordinate (linear11_c) at ($(q_txt_c) + (0, \dTxtLinear)$);
+    \node[a, draw=black!100, fill=grey!100] (linear11) at (linear11_c) {Linear};
+    
+    \coordinate (linear21_c) at ($(k_txt_c) + (0, \dTxtLinear)$);
+    \node[a, draw=black!100, fill=grey!100] (linear21) at (linear21_c) {Linear};
+    
+    \coordinate (linear31_c) at ($(v_txt_c) + (0, \dTxtLinear)$);
+    \node[a, draw=black!100, fill=grey!100] (linear31) at (linear31_c) {Linear};
+    
+    \begin{pgfonlayer}{background}
+        \coordinate (linear12_c) at ($(linear11_c) + (\dLinears, \dLinears)$);
+        \node[a, draw=black!70, fill=grey!70] (linear12) at (linear12_c){Linear};
+        
+        \coordinate (linear22_c) at ($(linear21_c) + (\dLinears, \dLinears)$);
+        \node[a, draw=black!70, fill=grey!70] (linear22) at (linear22_c){Linear};
+        
+        \coordinate (linear32_c) at ($(linear31_c) + (\dLinears, \dLinears)$);
+        \node[a, draw=black!70, fill=grey!70] (linear32) at (linear32_c){Linear};
+    \end{pgfonlayer}
+    
+    \begin{pgfonlayer}{background2}
+        \coordinate (linear13_c) at ($(linear12_c) + (\dLinears, \dLinears)$);
+        \node[a, draw=black!40, fill=grey!40] (linear13) at (linear13_c){Linear};
+        
+        \coordinate (linear23_c) at ($(linear22_c) + (\dLinears, \dLinears)$);
+        \node[a, draw=black!40, fill=grey!40] (linear23) at (linear23_c){Linear};
+        
+        \coordinate (linear33_c) at ($(linear32_c) + (\dLinears, \dLinears)$);
+        \node[a, draw=black!40, fill=grey!40] (linear33) at (linear33_c){Linear};
+    \end{pgfonlayer}
+    
+    % Attention
+    \coordinate (attention1_c) at ($(linear21_c) + (0, \dLayers)$);
+    \node[attention, align=center, draw=black!100, fill=purple!50] (attention1) at (attention1_c){Scaled Dot-Product \\ Attention};
+    
+    \begin{pgfonlayer}{background}
+        \coordinate (attention2_c) at ($(attention1_c) + (\dLinears, \dLinears)$);
+        \node[attention, align=center, draw=black!70, fill=purple!30] (attention2) at (attention2_c){Scaled Dot-Product \\ Attention};
+    \end{pgfonlayer}
+    
+    \begin{pgfonlayer}{background2}
+        \coordinate (attention3_c) at ($(attention2_c) + (\dLinears, \dLinears)$);
+        \node[attention, align=center, draw=black!40, fill=purple!10] (attention3) at (attention3_c){Scaled Dot-Product \\ Attention};
+    \end{pgfonlayer}
+    
+    % Concat
+    
+    \coordinate (concat_c) at ($(attention1_c) + (0, \dLayers)$);
+    \node[a, align=center, draw=black!100, fill=yellow!50] (concat) at (concat_c){Concat};
+    
+    % Linear2
+    
+    \coordinate (linear_c) at ($(concat_c) + (0, 0.75)$);
+    \node[a, align=center, draw=black!100, fill=grey!100] (linear) at (linear_c){Linear};
+    
+    \coordinate (final_c) at ($(linear_c) + (0, 0.5)$);
+    
+    % connections
+    
+    \draw[thick, ->] (q_txt) -- (q_txt|-linear11.south);
+    \draw[thick, ->] (k_txt) -- (k_txt|-linear21.south);
+    \draw[thick, ->] (v_txt) -- (v_txt|-linear31.south);
+    
+    \draw[thick, ->] (linear11) -- (linear11|-attention1.south);
+    \draw[thick, ->] (linear21) -- (linear21|-attention1.south);
+    \draw[thick, ->] (linear31) -- (linear31|-attention1.south);
+    
+    \begin{pgfonlayer}{background}
+        \draw[thick, color=black!70, ->] (linear12) -- (linear12|-attention2.south);
+        \draw[thick, color=black!70, ->] (linear22) -- (linear22|-attention2.south);
+        \draw[thick, color=black!70, ->] (linear32) -- (linear32|-attention2.south);
+    \end{pgfonlayer}
+    
+    \begin{pgfonlayer}{background2}
+        \draw[thick, color=black!40, ->] (linear13) -- (linear13|-attention3.south);
+        \draw[thick, color=black!40, ->] (linear23) -- (linear23|-attention3.south);
+        \draw[thick, color=black!40, ->] (linear33) -- (linear33|-attention3.south);
+    \end{pgfonlayer}
+    
+    \draw[thick, ->] (attention1) -- (attention1|-concat.south);
+    \draw[thick, color=black!70, ->] (attention2) -- (attention2|-concat.south);
+    \draw[thick, color=black!40, ->] (attention3) -- (attention3|-concat.south);
+    
+    \draw[thick, ->] (concat) -- (linear);
+    \draw[thick, ->] (linear) -- (final_c);
+\end{tikzpicture}

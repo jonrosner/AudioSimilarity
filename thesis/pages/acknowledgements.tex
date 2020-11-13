@@ -1,0 +1,22 @@
+\makeatletter
+% \ifthenelse{\pdf@strcmp{\languagename}{english}=0}
+% {\addcontentsline{toc}{chapter}{Acknowledgments}}
+% {\addcontentsline{toc}{chapter}{Danksagungen}}
+\makeatother
+\thispagestyle{empty}
+
+\vspace*{20mm}
+
+\begin{center}
+\makeatletter
+\ifthenelse{\pdf@strcmp{\languagename}{english}=0}
+{\usekomafont{section} Acknowledgments}
+{\usekomafont{section} Danksagungen}
+\makeatother
+\end{center}
+
+\vspace{10mm}
+
+I would like to thank my supervisor, Professor Dr. Hegelich. By giving me the opportunity to write this thesis he showed me that universities truly are magnificent places that let young scientists find their way in this world by letting them follow their passion. I also want to thank my partner Elisabeth, who always supports me in whatever I do, I love you. Lastly I want to thank my parents and brother who lay the foundation to everything I am and ever will be.
+
+\cleardoublepage{}

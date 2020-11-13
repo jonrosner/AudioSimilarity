@@ -1,0 +1,224 @@
+% variable naming:
+% bl = bottom left
+% tr = top right
+% tc = top center
+% c = center
+% w = width
+% h = height
+% one-third = 1d3 (one divided by three)
+
+% Component definition pattern
+% 1. define variables of component with tikzmath
+% 2. define coordinates with tikzcalc
+% 3. draw out component
+% 4. connect to other components
+
+\begin{tikzpicture}
+    % global variables
+    \definecolor{red}{RGB}{219, 50, 54}
+    \definecolor{yellow}{RGB}{244, 194, 13}
+    \definecolor{blue}{RGB}{72, 133, 237}
+    \definecolor{green}{RGB}{60, 186, 84}
+    \definecolor{orange}{RGB}{230, 122, 22}
+    \definecolor{purple}{RGB}{145, 91, 145}
+    \definecolor{grey}{RGB}{211, 211, 211}
+    
+    \tikzmath{
+        \lnH = 0.5;
+    }
+    % input
+    \tikzmath {
+        \smallBoxH = 0.55;
+        \inputW = 3;
+        \inputH = 1;
+    }
+    \coordinate (input_bl) at (0,0);
+    
+    \coordinate (input_tr) at ($(input_bl) + (\inputW, \smallBoxH)$);
+    \draw[rounded corners, thick, fill=red!50] (input_bl) rectangle (input_tr);
+    \coordinate (input_c) at ($(input_bl) + (\inputW / 2, \smallBoxH / 2)$);
+    \node[align=center, thick] at (input_c) {Input FFT};
+    \coordinate (input_tc) at ($(input_tr) - (\inputW / 2, 0)$);
+    
+    % conv1
+    \coordinate (conv1_bc) at ($(input_tc) +  (0,0.25)$);
+    \coordinate (conv1_bl) at ($(conv1_bc) - (\inputW / 2, 0)$);
+    \coordinate (conv1_c) at ($(conv1_bc) + (0, \smallBoxH / 2)$);
+    \coordinate (conv1_tr) at ($(conv1_bl) + (\inputW, \smallBoxH)$);
+    \coordinate (conv1_lc) at ($(conv1_c) - (\inputW / 2, 0)$);
+    \coordinate (conv1_tc) at ($(conv1_bc) + (0, \smallBoxH)$);
+    \draw[rounded corners, thick, fill=purple!50] (conv1_bl) rectangle (conv1_tr);
+    \node[align=center, thick] at (conv1_c) {Conv/2 \& ReLU};
+    
+    \draw[->, thick] (input_tc) -- (conv1_bc);
+    
+    % conv2
+    \coordinate (conv2_bc) at ($(conv1_tc) +  (0,0.25)$);
+    \coordinate (conv2_bl) at ($(conv2_bc) - (\inputW / 2, 0)$);
+    \coordinate (conv2_c) at ($(conv2_bc) + (0, \smallBoxH / 2)$);
+    \coordinate (conv2_tr) at ($(conv2_bl) + (\inputW, \smallBoxH)$);
+    \coordinate (conv2_lc) at ($(conv2_c) - (\inputW / 2, 0)$);
+    \coordinate (conv2_tc) at ($(conv2_bc) + (0, \smallBoxH)$);
+    \draw[rounded corners, thick, fill=purple!50] (conv2_bl) rectangle (conv2_tr);
+    \node[align=center, thick] at (conv2_c) {Conv/2 \& ReLU};
+    
+    \draw[->, thick] (conv1_tc) -- (conv2_bc);
+    
+    % plus
+    \tikzmath {
+        \plusR = 0.25;
+    };
+    
+    \coordinate (plus_bc) at ($(conv2_tc) + (0, 0.5)$);
+    \coordinate (plus_c) at ($(plus_bc) + (0, \plusR)$);
+    \coordinate (plus_lc) at ($(plus_c) - (\plusR, 0)$);
+    \coordinate (plus_tc) at ($(plus_c) + (0, \plusR)$);
+    
+    \draw[thick] (plus_c) circle (\plusR);
+    \draw[thick] ($(plus_lc) + (0.1,0)$) -- ($(plus_lc) + (\plusR*2 - 0.1, 0)$);
+    \draw[thick] ($(plus_bc) + (0,0.1)$) -- ($(plus_bc) + (0, \plusR*2 - 0.1)$);
+    
+    \draw[->, thick] (conv2_tc) -- (plus_bc);
+    
+    % positional encoding
+    \tikzmath {
+        \posR = 0.5;
+    };
+    \coordinate (pos_c) at ($(plus_lc) - (1,0)$);
+    \coordinate (pos_rc) at ($(pos_c) + (\posR, 0)$);
+    \draw[thick] (pos_c) circle (\posR);
+    \begin{scope}
+        \clip ($(pos_c) - (\posR,0)$) rectangle ($(pos_c) + (\posR,\posR)$);
+        \draw[thick] ($(pos_c) - (\posR / 2,0)$) circle (\posR / 2);
+    \end{scope}
+    \begin{scope}
+        \clip ($(pos_c) - (\posR,0)$) rectangle ($(pos_c) + (\posR,-\posR)$);
+        \draw[thick] ($(pos_c) + (\posR/2,0)$) circle (\posR/2);
+    \end{scope}
+    \draw[->,thick] (pos_rc) -- (plus_lc);
+    
+    % positional encoding text
+    \coordinate (pos_text) at ($(pos_c) - (1.5, 0)$);
+    \node[align=center, thick] at (pos_text) {Positional \\ Encoding};
+    \path (plus_c) -- ($(plus_c) + (0.25,0) + (1,0) + (2,0)$); % this is just for centering
+    
+    % multi-head-attention
+    \tikzmath {
+        \dPlusMha = 1.3;
+    };
+    \coordinate (mha_bc) at ($(plus_tc) + (0,\dPlusMha)$);
+    \coordinate (mha_c) at ($(mha_bc) + (0, \inputH / 2)$);
+    \coordinate (mha_tc) at ($(mha_bc) + (0, \inputH)$);
+    \coordinate (mha_bl) at ($(mha_c) - (\inputW / 2, \inputH / 2)$);
+    \coordinate (mha_tr) at ($(mha_c) + (\inputW / 2, \inputH / 2)$);
+    \draw[rounded corners, thick, fill=orange!50] (mha_bl) rectangle (mha_tr);
+    \node[align=center, thick] at (mha_c) {Multi-Head \\ Attention};
+    
+    \draw[->,thick] (plus_tc) -- (mha_bc);
+    
+    \coordinate (mha_arr_split) at ($(mha_bc) - (0,0.4)$);
+    \coordinate (mha_b1d8) at ($(mha_bl) + (1 * \inputW / 8, 0)$);
+    \coordinate (mha_b7d8) at ($(mha_bl) + (7 * \inputW / 8, 0)$);
+    \path let \p1=(mha_b1d8),\p2=(mha_arr_split) in coordinate (mha_arr_split_l) at (\x1,\y2);
+    \path let \p1=(mha_b7d8),\p2=(mha_arr_split) in coordinate (mha_arr_split_r) at (\x1,\y2);
+    \draw[->,thick,rounded corners] (mha_arr_split) -- (mha_arr_split_l) -- (mha_b1d8);
+    \draw[->,thick,rounded corners] (mha_arr_split) -- (mha_arr_split_r) -- (mha_b7d8);
+    
+    % Add & Norm
+    \tikzmath {
+        \dMhaAddNorm = 0.25;
+    }
+    \coordinate (addnorm_bc) at ($(mha_tc) +  (0,\dMhaAddNorm)$);
+    \coordinate (addnorm_bl) at ($(addnorm_bc) - (\inputW / 2, 0)$);
+    \coordinate (addnorm_c) at ($(addnorm_bc) + (0, \smallBoxH / 2)$);
+    \coordinate (addnorm_tr) at ($(addnorm_bl) + (\inputW, \smallBoxH)$);
+    \coordinate (addnorm_lc) at ($(addnorm_c) - (\inputW / 2, 0)$);
+    \coordinate (addnorm_tc) at ($(addnorm_bc) + (0, \smallBoxH)$);
+    \draw[rounded corners, thick, fill=yellow!50] (addnorm_bl) rectangle (addnorm_tr);
+    \node[align=center, thick] at (addnorm_c) {Add \& Norm};
+    
+    \draw[->,thick] (mha_tc) -- (addnorm_bc);
+    
+    % skip connection 1
+    \coordinate (skip_1_start) at ($(mha_arr_split) - (0, 0.25)$);
+    \coordinate (skip_1_lb) at ($(skip_1_start) - (1.75, 0)$);
+    \path let \p1=(skip_1_lb),\p2=(addnorm_c) in coordinate (skip_1_tl) at (\x1,\y2);
+    
+    \draw[->,thick, rounded corners] (skip_1_start) -- (skip_1_lb) -- (skip_1_tl) -- (addnorm_lc);
+    
+    % feed forward
+    \coordinate (ff_bc) at ($(addnorm_tc) + (0,1)$);
+    \coordinate (ff_c) at ($(ff_bc) + (0, \inputH / 2)$);
+    \coordinate (ff_tr) at ($(ff_c) + (\inputW / 2, \inputH / 2)$);
+    \coordinate (ff_bl) at ($(ff_c) - (\inputW / 2, \inputH / 2)$);
+    \coordinate (ff_tc) at ($(ff_c) + (0, \inputH / 2)$);
+    \draw[rounded corners, thick, fill=blue!50] (ff_bl) rectangle (ff_tr);
+    \node[align=center, thick] at (ff_c) {Feed \\ Forward};
+    
+    \draw[->,thick] (addnorm_tc) -- (ff_bc);
+    
+    % Add & Norm 2
+    \coordinate (addnorm2_bc) at ($(ff_tc) +  (0,\dMhaAddNorm)$);
+    \coordinate (addnorm2_bl) at ($(addnorm2_bc) - (\inputW / 2, 0)$);
+    \coordinate (addnorm2_c) at ($(addnorm2_bc) + (0, \smallBoxH / 2)$);
+    \coordinate (addnorm2_tr) at ($(addnorm2_bl) + (\inputW, \smallBoxH)$);
+    \coordinate (addnorm2_lc) at ($(addnorm2_c) - (\inputW / 2, 0)$);
+    \coordinate (addnorm2_tc) at ($(addnorm2_bc) + (0, \smallBoxH)$);
+    \draw[rounded corners, thick, fill=yellow!50] (addnorm2_bl) rectangle (addnorm2_tr);
+    \node[align=center, thick] at (addnorm2_c) {Add \& Norm};
+    
+    \draw[->,thick] (ff_tc) -- (addnorm2_bc);
+    
+    % skip connection 2
+    \coordinate (skip_2_start) at ($(ff_bc) - (0, 0.5)$);
+    \coordinate (skip_2_lb) at ($(skip_2_start) - (1.75, 0)$);
+    \path let \p1=(skip_2_lb),\p2=(addnorm2_c) in coordinate (skip_2_tl) at (\x1,\y2);
+    
+    \draw[->,thick, rounded corners] (skip_2_start) -- (skip_2_lb) -- (skip_2_tl) -- (addnorm2_lc);
+    
+    % surrounding box
+    \begin{pgfonlayer}{background}
+        \coordinate (box_bl) at ($(skip_1_start) - (2, 0.2)$);
+        \coordinate (box_tr) at ($(addnorm2_tc) + (2, 0.2)$);
+        \path let \p1=(box_bl),\p2=(box_tr) in coordinate (box_c) at 
+            (\x1 + \x2/2 - \x1/2, \y1 + \y2/2 - \y1/2);
+        \draw[rounded corners, thick, fill=grey!50] (box_bl) rectangle (box_tr);
+        
+        \coordinate (nx) at ($(box_c) - (2.5,0)$);
+        \node[align=center, thick] at (nx) {8$\times$};
+    \end{pgfonlayer}
+    
+    % global avg pooling
+    \coordinate (gap_bc) at ($(addnorm2_tc) + (0, 0.5)$);
+    \coordinate (gap_c) at ($(gap_bc) + (0, \smallBoxH / 2)$);
+    \coordinate (gap_tr) at ($(gap_c) + (\inputW / 2, \smallBoxH / 2)$);
+    \coordinate (gap_bl) at ($(gap_c) - (\inputW / 2, \smallBoxH / 2)$);
+    \coordinate (gap_tc) at ($(gap_c) + (0, \smallBoxH / 2)$);
+    \draw[rounded corners, thick, fill=blue!50] (gap_bl) rectangle (gap_tr);
+    \node[align=center, thick] at (gap_c) {Avg. Pooling};
+    
+    \draw[->,thick] (addnorm2_tc) -- (gap_bc);
+    
+    % linear
+    \coordinate (linear_bc) at ($(gap_tc) +  (0, 0.25)$);
+    \coordinate (linear_bl) at ($(linear_bc) - (\inputW / 2, 0)$);
+    \coordinate (linear_c) at ($(linear_bc) + (0, \smallBoxH / 2)$);
+    \coordinate (linear_tr) at ($(linear_bl) + (\inputW, \smallBoxH)$);
+    \coordinate (linear_tc) at ($(linear_bc) + (0, \smallBoxH)$);
+    \draw[rounded corners, thick, fill=purple!50] (linear_bl) rectangle (linear_tr);
+    \node[align=center, thick] at (linear_c) {Linear};
+    
+    \draw[->,thick] (gap_tc) -- (linear_bc);
+    
+    % softmax
+    \coordinate (softmax_bc) at ($(linear_tc) +  (0, 0.25)$);
+    \coordinate (softmax_bl) at ($(softmax_bc) - (\inputW / 2, 0)$);
+    \coordinate (softmax_c) at ($(softmax_bc) + (0, \smallBoxH / 2)$);
+    \coordinate (softmax_tr) at ($(softmax_bl) + (\inputW, \smallBoxH)$);
+    \coordinate (softmax_tc) at ($(softmax_bc) + (0, \smallBoxH)$);
+    \draw[rounded corners, thick, fill=green!50] (softmax_bl) rectangle (softmax_tr);
+    \node[align=center, thick] at (softmax_c) {Softmax};
+    
+    \draw[->,thick] (linear_tc) -- (softmax_bc);
+    
+\end{tikzpicture}

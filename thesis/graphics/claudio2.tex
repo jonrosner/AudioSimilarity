@@ -1,0 +1,105 @@
+\begin{tikzpicture}
+    \definecolor{red}{RGB}{219, 50, 54}
+    \definecolor{yellow}{RGB}{244, 194, 13}
+    \definecolor{blue}{RGB}{72, 133, 237}
+    \definecolor{green}{RGB}{60, 186, 84}
+    \definecolor{orange}{RGB}{230, 122, 22}
+    \definecolor{purple}{RGB}{145, 91, 145}
+    \definecolor{grey}{RGB}{211, 211, 211}
+    
+    \tikzstyle{boxNoFill}=[thick,draw,rounded corners, fill=grey!40]
+    
+    \tikzmath {
+        \pretrainBoxH = 11.5cm;
+        \pretrainBoxW = 5cm;
+    }
+    
+    \coordinate (pretrain_box_tl) at (0,0);
+    
+    \node[boxNoFill, minimum width = \pretrainBoxW, minimum height = \pretrainBoxH, below right] (pretrain_box) at (pretrain_box_tl) {};
+    
+    \coordinate (waveform_pre_input_c) at (2.5, -1);
+    \node (pretrain_txt) at (2.5, 0.25) {1. Pretraining};
+    
+    \node[inner sep=0pt] (waveform_pre_input) at (waveform_pre_input_c) {\scalebox{.4}{\input{figures/waveform_claudio.pgf}}};
+    
+    \coordinate (aug1_pre_c) at ($(waveform_pre_input_c) - (1.25, 1.5)$);
+    \node[inner sep=0pt] (aug1_pre) at (aug1_pre_c) {\scalebox{.3}{\input{figures/waveform_augmented1.pgf}}};
+    
+    \coordinate (aug2_pre_c) at ($(waveform_pre_input_c) + (1.25, -1.5)$);
+    \node[inner sep=0pt] (aug2_pre) at (aug2_pre_c) {\scalebox{.3}{\input{figures/waveform_augmented2.pgf}}};
+    
+    \draw[->,thick, shorten >=5pt, shorten <=5pt] (waveform_pre_input.south) -- (aug1_pre.north);
+    \draw[->,thick, shorten >=5pt, shorten <=5pt] (waveform_pre_input.south) -- (aug2_pre.north) node[midway,above] {\tiny \circled{1}};
+    
+    \coordinate (spec1_c) at ($(aug1_pre_c) - (0, 1.5)$);
+    \node[draw, thick, inner sep=0pt] (spec1) at (spec1_c) {\scalebox{.25}{\includegraphics[]{figures/spectrogram_augmented1-img0.png}}};
+    
+    \coordinate (spec2_c) at ($(aug2_pre_c) - (0, 1.5)$);
+    \node[draw, thick, inner sep=0pt] (spec2) at (spec2_c) {\scalebox{.25}{\includegraphics[]{figures/spectrogram_augmented2-img0.png}}};
+    
+    \draw[->,thick, shorten >=5pt] (aug1_pre.south) -- (spec1.north);
+    \draw[->,thick, shorten >=5pt] (aug2_pre.south) -- (spec2.north) node[midway,right] {\tiny \circled{2}};
+    
+    \coordinate (encoder_c) at ($(waveform_pre_input_c) - (0, 5)$);
+    \node[inner sep=0pt] (encoder) at (encoder_c)  {\scalebox{.4}{\input{graphics/brain}}};
+    
+    \draw[->,thick, shorten >=5pt, shorten <=5pt] (spec1.south) -- (encoder);
+    \draw[->,thick, shorten >=5pt, shorten <=5pt] (spec2.south) -- (encoder) node[midway,right] {\tiny \circled{3}};
+    
+    \coordinate (nn_pre_c) at ($(encoder_c) - (0, 2.5)$);
+    \node[inner sep=0pt, color=red] (nn_pre) at (nn_pre_c) {\scalebox{.3}{\input{graphics/neural_network}}};
+    \node[draw, fill=white, rounded corners] (nn_pre_txt) at ($(encoder_c)+(0,0.325)$) {\tiny Encoder};
+    
+    \coordinate (encoder_south1) at ($(encoder.south) - (0.2, 0)$);
+    \coordinate (encoder_south2) at ($(encoder.south) + (0.2, 0)$);
+    
+    \draw[thick, ->, shorten >=5pt, shorten <=5pt] (encoder_south1) -- (encoder_south1|-nn_pre.north);
+    \draw[thick, ->, shorten >=5pt, shorten <=5pt] (encoder_south2) -- (encoder_south2|-nn_pre.north) node[midway,right] {\tiny \circled{4}};
+    
+    \coordinate (nt_xent_c) at ($(nn_pre_c) - (0, 2)$);
+    \node[draw, rectangle, rounded corners, minimum width=2.5cm, minimum height=1cm, fill=red!50] (nt_xent) at (nt_xent_c) {NT-Xent};
+    
+    \coordinate (nn_pre_south1) at ($(nn_pre.south) - (0.2, 0)$);
+    \coordinate (nn_pre_south2) at ($(nn_pre.south) + (0.2, 0)$);
+    
+    \draw[thick, ->, shorten >=5pt, shorten <=5pt] (nn_pre_south1) -- (nn_pre_south1|-nt_xent.north);
+    \draw[thick, ->, shorten >=5pt, shorten <=5pt] (nn_pre_south2) -- (nn_pre_south2|-nt_xent.north) node[midway,right] {\tiny \circled{5}};
+    
+    
+    %%%%%%%%%%%%%%%%%%%%%%%
+    
+    \coordinate (transfer_box_tl) at (6,-1.75);
+    \node[boxNoFill, minimum width = 3cm, minimum height = 9.75cm, below right] (transfer_box) at (transfer_box_tl) {};
+    
+    \node (transfer_txt) at (7.5, -1.5) {2. Transfer};
+    
+    \coordinate (waveform_transfer_c) at (7.5,-2.5);
+    \node[inner sep=0pt] (waveform_transfer) at (waveform_transfer_c) {\scalebox{.3}{\input{figures/waveform_augmented3.pgf}}};
+    
+    \coordinate (spec_transfer_c) at ($(waveform_transfer_c) - (0, 1.5)$);
+    \node[draw, thick, inner sep=0pt] (spec_transfer) at (spec_transfer_c) {\scalebox{.25}{\includegraphics[]{figures/spectrogram_augmented3-img0.png}}};
+    
+    \draw[->,thick, shorten >=5pt, shorten <=5pt] (waveform_transfer.south) -- (spec_transfer.north);
+    
+    \coordinate (encoder_transfer_c) at ($(waveform_transfer_c) - (0, 3.5)$);
+    \node[inner sep=0pt] (encoder_transfer) at (encoder_transfer_c)  {\scalebox{.4}{\input{graphics/brain}}};
+    \node[draw, fill=white, rounded corners] (nn_transfer_txt) at ($(encoder_transfer_c)+(0,0.325)$) {\tiny Encoder};
+    
+    \draw[->,thick, shorten >=5pt, shorten <=5pt] (spec_transfer.south) -- (encoder_transfer.north);
+    
+    \coordinate (nn_transfer_c) at ($(encoder_transfer_c) - (0, 2.5)$);
+    \node[inner sep=0pt, color=green] (nn_transfer) at (nn_transfer_c) {\scalebox{.3}{\input{graphics/neural_network}}};
+    
+    \draw[->,thick, shorten >=5pt, shorten <=5pt] (encoder_transfer.south) -- (nn_transfer.north);
+    
+    \coordinate (cce_c) at ($(nn_transfer_c) - (0, 2)$);
+    \node[draw, rectangle, rounded corners, minimum width=2.5cm, minimum height=1cm, fill=green!50] (cce) at (cce_c) {Softmax-CCE};
+    
+    \draw[->,thick, shorten >=5pt, shorten <=5pt] (nn_transfer.south) -- (cce.north);
+    
+    \draw[->, thick, dashed, shorten >=5pt, shorten <=5pt] (encoder.east) .. controls ($(encoder.east) + (1.5,0.75)$) and ($(encoder.east) + (2,-1.5)$) .. (encoder_transfer.west);
+    
+    \node[] at ($(encoder.east) + (1,0.4)$) {\tiny \circled{6}};
+    
+\end{tikzpicture}

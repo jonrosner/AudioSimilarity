@@ -1,0 +1,25 @@
+\chapter*{\abstractname}
+
+We propose a deep learning framework for similarity learning of audio representations. It is inspired by the most recent successes in self-supervised representation learning in the domain of image data. Our framework transfers those successes to the domain of audio data. With our framework we show that (1) self-supervised contrastive learning can successfully learn robust audio representations without the need for labels, (2) the learned representations can be applied to other audio-based downstream tasks using transfer learning and (3) we show that our approach outperforms recently published results in the area of few-shot classification for audio data. We further describe the preliminary knowledge in signal processing and deep learning required to understand the inner workings of our proposed framework and investigate the most recent and most important related work in this field of research.
+
+\makeatletter
+\ifthenelse{\pdf@strcmp{\languagename}{english}=0}
+{\renewcommand{\abstractname}{Kurzfassung}}
+{\renewcommand{\abstractname}{Abstract}}
+\makeatother
+
+\chapter*{\abstractname}
+
+\begin{otherlanguage}{ngerman}
+
+In dieser Arbeit stellen wir ein neues Deep-Learning Framework zum Lernen von Ähnlichkeiten zwischen Audiorepräsentationen vor. Diese Arbeit ist inspiriert von den kürzlich erschienenen Erfolgen von ``self-supervised contrastive learning'' im Bereich der Bilderkennung. Unser Framework übernimmt diese neuesten Erkenntnisse und wendet sie auf Audiodaten an. Mit unserem Framework zeigen wir, dass (1) ``self-supervised contrastive learning'' ohne gelabelte Daten robuste Audiorepräsentationen lernen kann, (2) dass die gelernten Repräsentationen mittels ``transfer learning'' auf andere Bereiche übertragen werden können und (3) dass unser Ansatz kürzlich erschienene Arbeiten im Bereich ``few-shot classification'' übertrifft. Zudem erklären wir die Grundlagen in den Bereichen Signalverarbeitung und Deep-Learning, die notwendig sind, um unser Framework zu verstehen und untersuchen die aktuellsten und relevantesten Arbeiten in diesem Bereich.
+
+\end{otherlanguage}
+
+
+% Undo the name switch
+\makeatletter
+\ifthenelse{\pdf@strcmp{\languagename}{english}=0}
+{\renewcommand{\abstractname}{Abstract}}
+{\renewcommand{\abstractname}{Kurzfassung}}
+\makeatother

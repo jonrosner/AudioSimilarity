@@ -1,0 +1,43 @@
+\begin{tikzpicture}
+    \definecolor{red}{RGB}{219, 50, 54}
+    \definecolor{yellow}{RGB}{244, 194, 13}
+    \definecolor{blue}{RGB}{72, 133, 237}
+    \definecolor{green}{RGB}{60, 186, 84}
+    \definecolor{orange}{RGB}{230, 122, 22}
+    \definecolor{purple}{RGB}{145, 91, 145}
+    \definecolor{grey}{RGB}{211, 211, 211}
+    
+    \tikzstyle{blue}=[circle,fill,inner sep=4pt,color=blue!50]
+    \tikzstyle{red}=[fill,inner sep=6pt,color=red!50]
+    \tikzstyle{yellow}=[inner sep=3pt,color=yellow!50, regular polygon,regular polygon sides=3, fill]
+    
+    \tikzmath {
+        \dbox = 0.75;
+    }
+    
+    \begin{axis}[
+        axis lines=middle,
+        grid=major,
+        xmin=0,
+        xmax=4,
+        ymin=0,
+        ymax=4,
+        tick style={very thick},
+        xticklabels={,,},
+        yticklabels={,,}
+    ]
+    \node[circle, thick, draw, inner sep=25pt, fill=grey] at (axis cs:2,2) {};
+    \node[circle, thick, draw, inner sep=35pt] at (axis cs:2,2) {};
+    \node[blue] at (axis cs:2,2) {};
+    \node[blue] at (axis cs:1.7,1.4) {};
+    \node[blue] at (axis cs:2.3,2.1) {};
+    \node[blue] at (axis cs:2.4,1.7) {};
+    \node[red] at (axis cs:0.8,1.7) {};
+    \node[yellow] at (axis cs:1.8,3.4) {};
+    
+    \node[] (margin) at (axis cs:3,3.5) {Margin};
+    \draw[->, thick] (margin) -- (axis cs:2.3,3);
+    
+    \end{axis}
+
+\end{tikzpicture}

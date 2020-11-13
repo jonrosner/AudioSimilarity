@@ -1,0 +1,64 @@
+\RequirePackage[l2tabu,orthodox]{nag}
+
+% TODO: decide if one-sided/two-sided
+%\documentclass[headsepline,footsepline,footinclude=false,fontsize=11pt,paper=a4,listof=totoc,bibliography=totoc,BCOR=12mm,DIV=12]{scrbook} % two-sided % original source stated: BCOR=12mm,DIV=12
+\documentclass[headsepline,footsepline,footinclude=false,oneside,fontsize=11pt,paper=a4,listof=totoc,bibliography=totoc,DIV=12]{scrbook} % one-sided
+
+% TODO: change citation style in settings
+\input{settings}
+
+% TODO: change thesis information
+\newcommand*{\getUniversity}{Technische Universität München}
+\newcommand*{\getFaculty}{Department of Informatics}
+\newcommand*{\getTitle}{Deep Learning for Determining Audio Similarity}
+\newcommand*{\getTitleGer}{Deep Learning zur Bestimmung von Audio Ähnlichkeit}
+\newcommand*{\getAuthor}{Jonathan Rösner}
+\newcommand*{\getDoctype}{Master's Thesis in Informatics}
+\newcommand*{\getSupervisor}{Prof. Dr. Simon Hegelich}
+\newcommand*{\getAdvisor}{Prof. Dr. Simon Hegelich}
+\newcommand*{\getSubmissionDate}{11 / 15 / 2020}
+\newcommand*{\getSubmissionLocation}{Munich}
+
+\begin{document}
+
+% TODO: decide on used language
+%\selectlanguage{ngerman}
+\selectlanguage{english}
+
+% Set page numbering to avoid "destination with the same identifier has been already used" warning for cover page.
+% (see https://en.wikibooks.org/wiki/LaTeX/Hyperlinks#Problems_with_Links_and_Pages).
+\pagenumbering{alph}
+\input{pages/cover}
+
+\frontmatter{}
+
+\input{pages/title}
+\input{pages/disclaimer}
+\input{pages/acknowledgements}
+\input{pages/abstract}
+\microtypesetup{protrusion=false}
+\tableofcontents{}
+\microtypesetup{protrusion=true}
+
+\mainmatter{}
+
+\input{chapters/01_introduction}
+\input{chapters/02_preliminaries}
+\input{chapters/03_related_work}
+\input{chapters/04_cl_audio}
+\input{chapters/05_experiments}
+\input{chapters/06_conclusion_future_work}
+
+%\appendix{}
+
+% TODO: appendix chapter
+%\input{pages/appendix}
+
+\microtypesetup{protrusion=false}
+\listoffigures{}
+\listoftables{}
+\microtypesetup{protrusion=true}
+\printglossaries
+\printbibliography{}
+
+\end{document}

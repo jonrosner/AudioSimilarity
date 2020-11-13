@@ -1,0 +1,149 @@
+\begin{tikzpicture}
+    % global variables
+    \definecolor{red}{RGB}{219, 50, 54}
+    \definecolor{yellow}{RGB}{244, 194, 13}
+    \definecolor{blue}{RGB}{72, 133, 237}
+    \definecolor{green}{RGB}{60, 186, 84}
+    \definecolor{orange}{RGB}{230, 122, 22}
+    \definecolor{purple}{RGB}{145, 91, 145}
+    \definecolor{grey}{RGB}{211, 211, 211}
+    
+    \tikzmath{
+        \boxW = 11;
+        \boxH = 2.5;
+        \boxD = 0.25;
+        \embeddingW = 3;
+        \embeddingH = 1.5;
+        \headW = 1.75;
+        \pad = 2;
+        \dArrow = 1;
+    }
+    
+    % pretraining
+    
+    \coordinate (pretrain_bl) at (0,0);
+    \coordinate (pretrain_c) at ($(pretrain_bl) + (\boxW / 2, \boxH / 2)$);
+    \coordinate (pretrain_tr) at ($(pretrain_bl) + (\boxW, \boxH)$);
+    \draw[rounded corners, thick] (pretrain_bl) rectangle (pretrain_tr);
+    
+    \coordinate (pretrain_text) at ($(pretrain_c) - (\boxW / 2 - 0.25, -0.75)$);
+    \node[anchor=west, thick] at (pretrain_text) {1. Pre-training};
+    
+    \coordinate (data_p) at ($(pretrain_c) - (\boxW / 2 - \pad, 0)$);
+    \node[align=left] (data_p_node) at (data_p) {$(X,y)$};
+    
+    \coordinate (embedding_p_cl) at ($(data_p) + (\dArrow,0)$);
+    \coordinate (embedding_p_c) at ($(embedding_p_cl) + (\embeddingW / 2,0)$);
+    \coordinate (embedding_p_cr) at ($(embedding_p_cl) + (\embeddingW,0)$);
+    \coordinate (embedding_p_bl) at ($(embedding_p_cl) - (0,\embeddingH / 2)$);
+    \coordinate (embedding_p_tr) at ($(embedding_p_bl) + (\embeddingW,\embeddingH)$);
+    \coordinate (embedding_p_bc) at ($(embedding_p_c) - (0,\embeddingH / 2)$);
+    \coordinate (embedding_p_tc) at ($(embedding_p_c) + (0,\embeddingH / 2)$);
+    \draw[rounded corners, thick, fill=yellow!50] (embedding_p_bl) rectangle (embedding_p_tr);
+    \node[align=center, thick] at (embedding_p_c) {Encoder $f$};
+    
+    \coordinate (head_p_cl) at ($(embedding_p_cr) + (0.5, 0)$);
+    \coordinate (head_p_c) at ($(head_p_cl) + (\headW / 2, 0)$);
+    \coordinate (head_p_cr) at ($(head_p_cl) + (\headW, 0)$);
+    \coordinate (head_p_bl) at ($(head_p_cl) - (0, \embeddingH / 2)$);
+    \coordinate (head_p_tr) at ($(head_p_bl) + (\headW, \embeddingH)$);
+    
+    \draw[rounded corners, thick, fill=red!50] (head_p_bl) rectangle (head_p_tr);
+    \node[align=center, thick] at (head_p_c) {Head $g$};
+    
+    \coordinate (cost_p_c) at ($(head_p_cr) + (\dArrow-0.25, 0)$);
+    \node[right, thick] (cost_p_node) at (cost_p_c) {$\mathcal{L}_{pre}$};
+    
+    \draw[->,thick] (data_p_node) -- (embedding_p_cl);
+    \draw[->,thick] (embedding_p_cr) -- (head_p_cl);
+    \draw[->,thick] (head_p_cr) -- (cost_p_node);
+    
+    
+    % transfer
+    
+    \coordinate (transfer_bl) at ($(pretrain_bl) - (0, \boxH + \boxD)$);
+    \coordinate (transfer_c) at ($(transfer_bl) + (\boxW / 2, \boxH / 2)$);
+    \coordinate (transfer_tr) at ($(transfer_bl) + (\boxW, \boxH)$);
+    \draw[rounded corners, thick] (transfer_bl) rectangle (transfer_tr);
+    
+    \coordinate (transfer_text) at ($(transfer_c) - (\boxW / 2 - 0.25, -0.75)$);
+    \node[align=left, anchor=west, thick] at (transfer_text) {2. Transfer};
+    
+    \coordinate (data_t) at ($(transfer_c) - (\boxW / 2 - \pad, 0)$);
+    \node[align=left] (data_t_node) at (data_t) {$(X',y')$};
+    
+    \coordinate (embedding_t_cl) at ($(data_t) + (\dArrow,0)$);
+    \coordinate (embedding_t_c) at ($(embedding_t_cl) + (\embeddingW / 2,0)$);
+    \coordinate (embedding_t_cr) at ($(embedding_t_cl) + (\embeddingW,0)$);
+    \coordinate (embedding_t_bl) at ($(embedding_t_cl) - (0,\embeddingH / 2)$);
+    \coordinate (embedding_t_tr) at ($(embedding_t_bl) + (\embeddingW,\embeddingH)$);
+    \coordinate (embedding_t_bc) at ($(embedding_t_c) - (0,\embeddingH / 2)$);
+    \coordinate (embedding_t_tc) at ($(embedding_t_c) + (0,\embeddingH / 2)$);
+    \draw[rounded corners, thick, fill=yellow!50] (embedding_t_bl) rectangle (embedding_t_tr);
+    \node[align=center, thick] at (embedding_t_c) {Encoder $f$ \\ (frozen)};
+    
+    \coordinate (head_t_cl) at ($(embedding_t_cr) + (0.5, 0)$);
+    \coordinate (head_t_c) at ($(head_t_cl) + (\headW / 2, 0)$);
+    \coordinate (head_t_cr) at ($(head_t_cl) + (\headW, 0)$);
+    \coordinate (head_t_bl) at ($(head_t_cl) - (0, \embeddingH / 2)$);
+    \coordinate (head_t_tr) at ($(head_t_bl) + (\headW, \embeddingH)$);
+    \coordinate (head_t_bc) at ($(head_t_c) - (0, \embeddingH / 2)$);
+    
+    \draw[rounded corners, thick, fill=green!50] (head_t_bl) rectangle (head_t_tr);
+    \node[align=center, thick] at (head_t_c) {Head $g'$};
+    
+    \coordinate (cost_t_c) at ($(head_t_cr) + (\dArrow-0.25, 0)$);
+    \node[right, thick] (cost_t_node) at (cost_t_c) {$\mathcal{L}_{transfer}$};
+    
+    \draw[->,thick] (data_t_node) -- (embedding_t_cl);
+    \draw[->,thick] (embedding_t_cr) -- (head_t_cl);
+    \draw[->,thick] (head_t_cr) -- (cost_t_node);
+    
+    % finetune
+    
+    % \coordinate (finetune_bl) at ($(transfer_bl) - (0, \boxH + \boxD)$);
+    % \coordinate (finetune_c) at ($(finetune_bl) + (\boxW / 2, \boxH / 2)$);
+    % \coordinate (finetune_tr) at ($(finetune_bl) + (\boxW, \boxH)$);
+    % \draw[rounded corners, thick] (finetune_bl) rectangle (finetune_tr);
+    
+    % \coordinate (finetune_text) at ($(finetune_c) - (\boxW / 2 - 0.25, -0.75)$);
+    % \node[align=left, anchor=west, thick] at (finetune_text) {3. Fine-tuneing};
+    
+    % \coordinate (data_f) at ($(finetune_c) - (\boxW / 2 - \pad, 0)$);
+    % \node[align=left] (data_f_node) at (data_f) {$(X',y'$};
+    
+    % \coordinate (embedding_f_cl) at ($(data_f) + (\dArrow,0)$);
+    % \coordinate (embedding_f_c) at ($(embedding_f_cl) + (\embeddingW / 2,0)$);
+    % \coordinate (embedding_f_cr) at ($(embedding_f_cl) + (\embeddingW,0)$);
+    % \coordinate (embedding_f_bl) at ($(embedding_f_cl) - (0,\embeddingH / 2)$);
+    % \coordinate (embedding_f_tr) at ($(embedding_f_bl) + (\embeddingW,\embeddingH)$);
+    % \coordinate (embedding_f_bc) at ($(embedding_f_c) - (0,\embeddingH / 2)$);
+    % \coordinate (embedding_f_tc) at ($(embedding_f_c) + (0,\embeddingH / 2)$);
+    % \draw[rounded corners, thick, fill=yellow!50] (embedding_f_bl) rectangle (embedding_f_tr);
+    % \node[align=center, thick] at (embedding_f_c) {Encoder};
+    
+    % \coordinate (head_f_cl) at ($(embedding_f_cr) + (0.5, 0)$);
+    % \coordinate (head_f_c) at ($(head_f_cl) + (\headW / 2, 0)$);
+    % \coordinate (head_f_cr) at ($(head_f_cl) + (\headW, 0)$);
+    % \coordinate (head_f_bl) at ($(head_f_cl) - (0, \embeddingH / 2)$);
+    % \coordinate (head_f_tr) at ($(head_f_bl) + (\headW, \embeddingH)$);
+    % \coordinate (head_f_tc) at ($(head_f_c) + (0, \embeddingH / 2)$);
+    
+    % \draw[rounded corners, thick, fill=green!50] (head_f_bl) rectangle (head_f_tr);
+    % \node[align=center, thick] at (head_f_c) {$Head_t$};
+    
+    % \coordinate (cost_f_c) at ($(head_f_cr) + (\dArrow, 0)$);
+    % \node[align=center, thick] (cost_f_node) at (cost_f_c) {$Cost_t$};
+    
+    % \draw[->,thick] (data_f_node) -- (embedding_f_cl);
+    % \draw[->,thick] (embedding_f_cr) -- (head_f_cl);
+    % \draw[->,thick] (head_f_cr) -- (cost_f_node);
+    
+    % % 
+    
+    \draw[|->,thick] ($(embedding_p_bc) - (0, 0.15)$) -- ($(embedding_t_tc) + (0, 0.15)$);
+    % \draw[|->,thick] ($(embedding_t_bc) - (0, 0.15)$) -- ($(embedding_f_tc) + (0, 0.15)$);
+    % \draw[|->,thick] ($(head_t_bc) - (0, 0.15)$) -- ($(head_f_tc) + (0, 0.15)$);
+    
+    
+\end{tikzpicture}

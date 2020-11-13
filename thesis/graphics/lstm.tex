@@ -1,0 +1,275 @@
+\begin{tikzpicture}
+    \definecolor{red}{RGB}{219, 50, 54}
+    \definecolor{yellow}{RGB}{244, 194, 13}
+    \definecolor{blue}{RGB}{72, 133, 237}
+    \definecolor{green}{RGB}{60, 186, 84}
+    \definecolor{orange}{RGB}{230, 122, 22}
+    \definecolor{purple}{RGB}{145, 91, 145}
+    \definecolor{grey}{RGB}{211, 211, 211}
+    
+    \tikzmath {
+        \cellW = 1.75;
+        \cellH = 1;
+        \inputR = 0.5;
+        \dLayer = 1;
+        \dCell = 0.75;
+        \smallBoxH = 0.55;
+        \inputW = 3;
+        \inputH = 1;
+    }
+    
+    % INPUTS
+    % 1
+    \coordinate (input_1_c) at (0,0);
+    \coordinate (input_1_tc) at ($(input_1_c) + (0, \inputR)$);
+    
+    \draw[thick, fill=red!50] (input_1_c) circle (\inputR);
+    \node[align=center, thick] at (input_1_c) {$x_1$};
+    
+    % 2
+    \coordinate (input_2_c) at ($(input_1_c) + (\cellW + \dCell, 0)$);
+    \coordinate (input_2_tc) at ($(input_2_c) + (0, \inputR)$);
+    
+    \draw[thick, fill=red!50] (input_2_c) circle (\inputR);
+    \node[align=center, thick] at (input_2_c) {$x_2$};
+    
+     % 3
+    \coordinate (input_3_c) at ($(input_2_c) + (\cellW + \dCell, 0)$);
+    \coordinate (input_3_tc) at ($(input_3_c) + (0, \inputR)$);
+    
+    \draw[thick, fill=red!50] (input_3_c) circle (\inputR);
+    \node[align=center, thick] at (input_3_c) {$x_3$};
+    
+    % ellipsis
+    \coordinate (input_e_c) at ($(input_3_c) + (\cellW + \dCell, 0)$);
+    \node[align=center, thick] at (input_e_c) {\LARGE $\ldots$};
+    
+    % n
+    \coordinate (input_n_c) at ($(input_e_c) + (\cellW + \dCell, 0)$);
+    \coordinate (input_n_tc) at ($(input_n_c) + (0, \inputR)$);
+    
+    \draw[thick, fill=red!50] (input_n_c) circle (\inputR);
+    \node[align=center, thick] at (input_n_c) {$x_n$};
+    
+    % LAYER 1   
+    % 1
+    \coordinate (lstm_1_bc) at ($(input_1_tc) + (0, \dLayer)$);
+    \coordinate (lstm_1_tc) at ($(lstm_1_bc) + (0, \cellH)$);
+    \coordinate (lstm_1_bl) at ($(lstm_1_bc) - (\cellW / 2, 0)$);
+    \coordinate (lstm_1_tr) at ($(lstm_1_bl) + (\cellW, \cellH)$);
+    \coordinate (lstm_1_c) at ($(lstm_1_bl) + (\cellW / 2, \cellH / 2)$);
+    \coordinate (lstm_1_2d3r) at ($(lstm_1_tr) - (0, \cellH/3)$);
+    \coordinate (lstm_1_1d3r) at ($(lstm_1_tr) - (0, 2*\cellH/3)$);
+    \coordinate (lstm_1_1d3l) at ($(lstm_1_bl) + (0, \cellH/3)$);
+    \coordinate (lstm_1_2d3l) at ($(lstm_1_bl) + (0, 2*\cellH/3)$);
+    
+    \draw[thick, fill=green!50, rounded corners] (lstm_1_bl) rectangle (lstm_1_tr);
+    \node[align=center, thick] at (lstm_1_c) {LSTM};
+    
+    % 2
+    \coordinate (lstm_2_bc) at ($(input_2_tc) + (0, \dLayer)$);
+    \coordinate (lstm_2_tc) at ($(lstm_2_bc) + (0, \cellH)$);
+    \coordinate (lstm_2_bl) at ($(lstm_2_bc) - (\cellW / 2, 0)$);
+    \coordinate (lstm_2_tr) at ($(lstm_2_bl) + (\cellW, \cellH)$);
+    \coordinate (lstm_2_c) at ($(lstm_2_bl) + (\cellW / 2, \cellH / 2)$);
+    \coordinate (lstm_2_2d3r) at ($(lstm_2_tr) - (0, \cellH/3)$);
+    \coordinate (lstm_2_1d3r) at ($(lstm_2_tr) - (0, 2*\cellH/3)$);
+    \coordinate (lstm_2_1d3l) at ($(lstm_2_bl) + (0, \cellH/3)$);
+    \coordinate (lstm_2_2d3l) at ($(lstm_2_bl) + (0, 2*\cellH/3)$);
+    
+    \draw[thick, fill=green!50, rounded corners] (lstm_2_bl) rectangle (lstm_2_tr);
+    \node[align=center, thick] at (lstm_2_c) {LSTM};
+    
+    \draw[->, thick] (lstm_1_1d3r) -- (lstm_2_1d3l);
+    \draw[->, thick] (lstm_2_2d3l) -- (lstm_1_2d3r);
+    
+    % 3
+    \coordinate (lstm_3_bc) at ($(input_3_tc) + (0, \dLayer)$);
+    \coordinate (lstm_3_tc) at ($(lstm_3_bc) + (0, \cellH)$);
+    \coordinate (lstm_3_bl) at ($(lstm_3_bc) - (\cellW / 2, 0)$);
+    \coordinate (lstm_3_tr) at ($(lstm_3_bl) + (\cellW, \cellH)$);
+    \coordinate (lstm_3_c) at ($(lstm_3_bl) + (\cellW / 2, \cellH / 2)$);
+    \coordinate (lstm_3_rc) at ($(lstm_3_c) + (\cellW / 2, 0)$);
+    \coordinate (lstm_3_2d3r) at ($(lstm_3_tr) - (0, \cellH/3)$);
+    \coordinate (lstm_3_1d3r) at ($(lstm_3_tr) - (0, 2*\cellH/3)$);
+    \coordinate (lstm_3_1d3l) at ($(lstm_3_bl) + (0, \cellH/3)$);
+    \coordinate (lstm_3_2d3l) at ($(lstm_3_bl) + (0, 2*\cellH/3)$);
+    
+    \draw[thick, fill=green!50, rounded corners] (lstm_3_bl) rectangle (lstm_3_tr);
+    \node[align=center, thick] at (lstm_3_c) {LSTM};
+    
+    \draw[->, thick] (lstm_2_1d3r) -- (lstm_3_1d3l);
+    \draw[->, thick] (lstm_3_2d3l) -- (lstm_2_2d3r);
+    
+    % ...
+    \coordinate (ellipsis_1_bc) at ($(lstm_3_bc) + (\dCell + \cellW, 0)$);
+    \coordinate (ellipsis_1_tc) at ($(ellipsis_1_bc) + (0, \cellH)$);
+    \coordinate (ellipsis_1_bl) at ($(ellipsis_1_bc) - (\cellW / 2, 0)$);
+    \coordinate (ellipsis_1_tr) at ($(ellipsis_1_bl) + (\cellW, \cellH)$);
+    \coordinate (ellipsis_1_c) at ($(ellipsis_1_bl) + (\cellW / 2, \cellH / 2)$);
+    \coordinate (ellipsis_1_rc) at ($(ellipsis_1_c) + (\cellW / 2, 0)$);
+    \coordinate (ellipsis_1_2d3r) at ($(ellipsis_1_tr) - (0, \cellH/3)$);
+    \coordinate (ellipsis_1_1d3r) at ($(ellipsis_1_tr) - (0, 2*\cellH/3)$);
+    \coordinate (ellipsis_1_1d3l) at ($(ellipsis_1_bl) + (0, \cellH/3)$);
+    \coordinate (ellipsis_1_2d3l) at ($(ellipsis_1_bl) + (0, 2*\cellH/3)$);
+    \path (ellipsis_1_bl) rectangle (ellipsis_1_tr);
+    \node[align=center, thick] at (ellipsis_1_c) {\LARGE $\ldots$};
+    
+    \draw[->, thick] (lstm_3_1d3r) -- (ellipsis_1_1d3l);
+    \draw[->, thick] (ellipsis_1_2d3l) -- (lstm_3_2d3r);
+    
+    % n
+    \coordinate (lstm_n_bc) at  ($(input_n_tc) + (0, \dLayer)$);
+    \coordinate (lstm_n_tc) at ($(lstm_n_bc) + (0, \cellH)$);
+    \coordinate (lstm_n_bl) at ($(lstm_n_bc) - (\cellW / 2, 0)$);
+    \coordinate (lstm_n_tr) at ($(lstm_n_bl) + (\cellW, \cellH)$);
+    \coordinate (lstm_n_c) at ($(lstm_n_bl) + (\cellW / 2, \cellH / 2)$);
+    \coordinate (lstm_n_rc) at ($(lstm_n_c) + (\cellW / 2, 0)$);
+    \coordinate (lstm_n_2d3r) at ($(lstm_n_tr) - (0, \cellH/3)$);
+    \coordinate (lstm_n_1d3r) at ($(lstm_n_tr) - (0, 2*\cellH/3)$);
+    \coordinate (lstm_n_1d3l) at ($(lstm_n_bl) + (0, \cellH/3)$);
+    \coordinate (lstm_n_2d3l) at ($(lstm_n_bl) + (0, 2*\cellH/3)$);
+    
+    \draw[thick, fill=green!50, rounded corners] (lstm_n_bl) rectangle (lstm_n_tr);
+    \node[align=center, thick] at (lstm_n_c) {LSTM};
+    
+    \draw[->, thick] (ellipsis_1_1d3r) -- (lstm_n_1d3l);
+    \draw[->, thick] (lstm_n_2d3l) -- (ellipsis_1_2d3r);
+    
+    % input -> layer1
+    \draw[->, thick] (input_1_tc) -- (lstm_1_bc);
+    \draw[->, thick] (input_2_tc) -- (lstm_2_bc);
+    \draw[->, thick] (input_3_tc) -- (lstm_3_bc);
+    \draw[->, thick] (input_n_tc) -- (lstm_n_bc);
+    
+    % LSTM LAYER 2
+    % 1
+    \coordinate (lstm2_1_bc) at ($(lstm_1_tc) + (0, \dLayer)$);
+    \coordinate (lstm2_1_tc) at ($(lstm2_1_bc) + (0, \cellH)$);
+    \coordinate (lstm2_1_bl) at ($(lstm2_1_bc) - (\cellW / 2, 0)$);
+    \coordinate (lstm2_1_tr) at ($(lstm2_1_bl) + (\cellW, \cellH)$);
+    \coordinate (lstm2_1_c) at ($(lstm2_1_bl) + (\cellW / 2, \cellH / 2)$);
+    \coordinate (lstm2_1_2d3r) at ($(lstm2_1_tr) - (0, \cellH/3)$);
+    \coordinate (lstm2_1_1d3r) at ($(lstm2_1_tr) - (0, 2*\cellH/3)$);
+    \coordinate (lstm2_1_1d3l) at ($(lstm2_1_bl) + (0, \cellH/3)$);
+    \coordinate (lstm2_1_2d3l) at ($(lstm2_1_bl) + (0, 2*\cellH/3)$);
+    
+    \draw[thick, fill=green!50, rounded corners] (lstm2_1_bl) rectangle (lstm2_1_tr);
+    \node[align=center, thick] at (lstm2_1_c) {LSTM};
+    
+    % 2
+    \coordinate (lstm2_2_bc) at ($(lstm_2_tc) + (0, \dLayer)$);
+    \coordinate (lstm2_2_tc) at ($(lstm2_2_bc) + (0, \cellH)$);
+    \coordinate (lstm2_2_bl) at ($(lstm2_2_bc) - (\cellW / 2, 0)$);
+    \coordinate (lstm2_2_tr) at ($(lstm2_2_bl) + (\cellW, \cellH)$);
+    \coordinate (lstm2_2_c) at ($(lstm2_2_bl) + (\cellW / 2, \cellH / 2)$);
+    \coordinate (lstm2_2_2d3r) at ($(lstm2_2_tr) - (0, \cellH/3)$);
+    \coordinate (lstm2_2_1d3r) at ($(lstm2_2_tr) - (0, 2*\cellH/3)$);
+    \coordinate (lstm2_2_1d3l) at ($(lstm2_2_bl) + (0, \cellH/3)$);
+    \coordinate (lstm2_2_2d3l) at ($(lstm2_2_bl) + (0, 2*\cellH/3)$);
+    
+    \draw[thick, fill=green!50, rounded corners] (lstm2_2_bl) rectangle (lstm2_2_tr);
+    \node[align=center, thick] at (lstm2_2_c) {LSTM};
+    
+    \draw[->, thick] (lstm2_1_1d3r) -- (lstm2_2_1d3l);
+    \draw[->, thick] (lstm2_2_2d3l) -- (lstm2_1_2d3r);
+    
+    % 3
+    \coordinate (lstm2_3_bc) at ($(lstm_3_tc) + (0, \dLayer)$);
+    \coordinate (lstm2_3_tc) at ($(lstm2_3_bc) + (0, \cellH)$);
+    \coordinate (lstm2_3_bl) at ($(lstm2_3_bc) - (\cellW / 2, 0)$);
+    \coordinate (lstm2_3_tr) at ($(lstm2_3_bl) + (\cellW, \cellH)$);
+    \coordinate (lstm2_3_c) at ($(lstm2_3_bl) + (\cellW / 2, \cellH / 2)$);
+    \coordinate (lstm2_3_2d3r) at ($(lstm2_3_tr) - (0, \cellH/3)$);
+    \coordinate (lstm2_3_1d3r) at ($(lstm2_3_tr) - (0, 2*\cellH/3)$);
+    \coordinate (lstm2_3_1d3l) at ($(lstm2_3_bl) + (0, \cellH/3)$);
+    \coordinate (lstm2_3_2d3l) at ($(lstm2_3_bl) + (0, 2*\cellH/3)$);
+    
+    \draw[thick, fill=green!50, rounded corners] (lstm2_3_bl) rectangle (lstm2_3_tr);
+    \node[align=center, thick] at (lstm2_3_c) {LSTM};
+    
+    \draw[->, thick] (lstm2_2_1d3r) -- (lstm2_3_1d3l);
+    \draw[->, thick] (lstm2_3_2d3l) -- (lstm2_2_2d3r);
+    
+     % ...
+    \coordinate (ellipsis_2_bc) at ($(lstm2_3_bc) + (\dCell + \cellW, 0)$);
+    \coordinate (ellipsis_2_tc) at ($(ellipsis_2_bc) + (0, \cellH)$);
+    \coordinate (ellipsis_2_bl) at ($(ellipsis_2_bc) - (\cellW / 2, 0)$);
+    \coordinate (ellipsis_2_tr) at ($(ellipsis_2_bl) + (\cellW, \cellH)$);
+    \coordinate (ellipsis_2_c) at ($(ellipsis_2_bl) + (\cellW / 2, \cellH / 2)$);
+    \coordinate (ellipsis_2_rc) at ($(ellipsis_2_c) + (\cellW / 2, 0)$);
+    \coordinate (ellipsis_2_2d3r) at ($(ellipsis_2_tr) - (0, \cellH/3)$);
+    \coordinate (ellipsis_2_1d3r) at ($(ellipsis_2_tr) - (0, 2*\cellH/3)$);
+    \coordinate (ellipsis_2_1d3l) at ($(ellipsis_2_bl) + (0, \cellH/3)$);
+    \coordinate (ellipsis_2_2d3l) at ($(ellipsis_2_bl) + (0, 2*\cellH/3)$);
+    \path (ellipsis_2_bl) rectangle (ellipsis_2_tr);
+    \node[align=center, thick] at (ellipsis_2_c) {\LARGE $\ldots$};
+    
+    \draw[->, thick] (lstm2_3_1d3r) -- (ellipsis_2_1d3l);
+    \draw[->, thick] (ellipsis_2_2d3l) -- (lstm2_3_2d3r);
+    
+    % n
+    \coordinate (lstm2_n_bc) at  ($(lstm_n_tc) + (0, \dLayer)$);
+    \coordinate (lstm2_n_tc) at ($(lstm2_n_bc) + (0, \cellH)$);
+    \coordinate (lstm2_n_bl) at ($(lstm2_n_bc) - (\cellW / 2, 0)$);
+    \coordinate (lstm2_n_tr) at ($(lstm2_n_bl) + (\cellW, \cellH)$);
+    \coordinate (lstm2_n_c) at ($(lstm2_n_bl) + (\cellW / 2, \cellH / 2)$);
+    \coordinate (lstm2_n_2d3r) at ($(lstm2_n_tr) - (0, \cellH/3)$);
+    \coordinate (lstm2_n_1d3r) at ($(lstm2_n_tr) - (0, 2*\cellH/3)$);
+    \coordinate (lstm2_n_1d3l) at ($(lstm2_n_bl) + (0, \cellH/3)$);
+    \coordinate (lstm2_n_2d3l) at ($(lstm2_n_bl) + (0, 2*\cellH/3)$);
+    
+    \draw[thick, fill=green!50, rounded corners] (lstm2_n_bl) rectangle (lstm2_n_tr);
+    \node[align=center, thick] at (lstm2_n_c) {LSTM};
+    
+    \draw[->, thick] (ellipsis_2_1d3r) -- (lstm2_n_1d3l);
+    \draw[->, thick] (lstm2_n_2d3l) -- (ellipsis_2_2d3r);
+    
+    % layer1 -> layer2
+    \draw[->, thick] (lstm_1_tc) -- (lstm2_1_bc);
+    \draw[->, thick] (lstm_2_tc) -- (lstm2_2_bc);
+    \draw[->, thick] (lstm_3_tc) -- (lstm2_3_bc);
+    \draw[->, thick] (lstm_n_tc) -- (lstm2_n_bc);
+    
+    % add embeddings
+    \tikzmath{
+        \plusR = 0.25;
+    }
+    \coordinate (plus_bc) at ($(lstm2_3_tc) + (0, \dLayer)$);
+    \coordinate (plus_c) at ($(plus_bc) + (0, \plusR)$);
+    \coordinate (plus_lc) at ($(plus_c) - (\plusR, 0)$);
+    \coordinate (plus_rc) at ($(plus_c) + (\plusR, 0)$);
+    \coordinate (plus_tc) at ($(plus_c) + (0, \plusR)$);
+    
+    \draw[thick] (plus_c) circle (\plusR);
+    \draw[thick] ($(plus_lc) + (0.1,0)$) -- ($(plus_lc) + (\plusR*2 - 0.1, 0)$);
+    \draw[thick] ($(plus_bc) + (0,0.1)$) -- ($(plus_bc) + (0, \plusR*2 - 0.1)$);
+    
+    \coordinate (add_l) at ($(lstm2_1_tc) + (0, \dLayer + \plusR)$);
+    \coordinate (add_r) at ($(lstm2_n_tc) + (0, \dLayer + \plusR)$);
+    \draw[->, thick, rounded corners] (lstm2_1_tc) -- (add_l) -- (plus_lc);
+    \draw[->, thick, rounded corners] (lstm2_n_tc) -- (add_r) -- (plus_rc);
+    
+    % linear
+    \coordinate (linear_bc) at ($(plus_tc) +  (0, 0.25)$);
+    \coordinate (linear_bl) at ($(linear_bc) - (\inputW / 2, 0)$);
+    \coordinate (linear_c) at ($(linear_bc) + (0, \smallBoxH / 2)$);
+    \coordinate (linear_tr) at ($(linear_bl) + (\inputW, \smallBoxH)$);
+    \coordinate (linear_tc) at ($(linear_bc) + (0, \smallBoxH)$);
+    \draw[rounded corners, thick, fill=purple!50] (linear_bl) rectangle (linear_tr);
+    \node[align=center, thick] at (linear_c) {Linear};
+    
+    \draw[->,thick] (plus_tc) -- (linear_bc);
+    
+    % softmax
+    \coordinate (softmax_bc) at ($(linear_tc) +  (0, 0.25)$);
+    \coordinate (softmax_bl) at ($(softmax_bc) - (\inputW / 2, 0)$);
+    \coordinate (softmax_c) at ($(softmax_bc) + (0, \smallBoxH / 2)$);
+    \coordinate (softmax_tr) at ($(softmax_bl) + (\inputW, \smallBoxH)$);
+    \coordinate (softmax_tc) at ($(softmax_bc) + (0, \smallBoxH)$);
+    \draw[rounded corners, thick, fill=green!50] (softmax_bl) rectangle (softmax_tr);
+    \node[align=center, thick] at (softmax_c) {Softmax};
+    
+    \draw[->,thick] (linear_tc) -- (softmax_bc);
+    
+\end{tikzpicture}

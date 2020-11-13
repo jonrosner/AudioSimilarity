@@ -1,0 +1,50 @@
+\begin{tikzpicture}
+    \definecolor{red}{RGB}{219, 50, 54}
+    \definecolor{yellow}{RGB}{244, 194, 13}
+    \definecolor{blue}{RGB}{72, 133, 237}
+    \definecolor{green}{RGB}{60, 186, 84}
+    \definecolor{orange}{RGB}{230, 122, 22}
+    \definecolor{purple}{RGB}{145, 91, 145}
+    \definecolor{grey}{RGB}{211, 211, 211}
+    
+    \tikzmath {
+        \augmentationW = 3cm;
+        \augmentationH = 0.75cm;
+        \augmentationDw = 2;
+        \augmentationDh = 1.375;
+        \networkW = 7cm;
+        \networkH = 1cm;
+    }
+    
+    \tikzstyle{boxNofill}=[thick,draw, minimum width=\augmentationW, minimum height=\augmentationH, rounded corners]
+    
+    \tikzstyle{network}=[thick,draw, minimum width=\networkW, minimum height=\networkH, rounded corners]
+    
+    \coordinate (input_c) at (0,0);
+    \node[boxNofill, fill=purple!50] (input) at (input_c) {Input};
+    
+    \coordinate (preprocessing_c) at ($(input_c) - (0, \augmentationDh)$);
+    \node[boxNofill, fill=purple!50] (preprocessing) at (preprocessing_c) {Preprocessing};
+    
+    \coordinate (enhancement_c) at ($(preprocessing_c) - (0, \augmentationDh * 2)$);
+    \node[boxNofill, fill=orange!50] (enhancement) at (enhancement_c) {Enhancement};
+    
+    \coordinate (stft_c) at ($(enhancement_c) - (0, \augmentationDh)$);
+    \node[boxNofill, fill=orange!50] (stft) at (stft_c) {STFT};
+    
+    \coordinate (embedding_c) at ($(stft_c) + (0, -1.5)$);
+    \node[network, fill=yellow!50] (embedding) at (embedding_c) {Embedding Network (frozen)};
+    
+    \coordinate (classification_c) at ($(embedding_c) - (0, 1.625)$);
+    \node[network, fill=green!50] (classification) at (classification_c) {Classification Head};
+    
+    \coordinate (scce_c) at ($(classification_c) - (0, 1.5)$);
+    \node[boxNofill, fill=purple!50] (scce) at (scce_c) {Softmax-CCE Loss};
+    
+    \draw[->, thick] (input) -- (preprocessing);
+    \draw[->, thick] (preprocessing) -- (enhancement);
+    \draw[->, thick] (enhancement) -- (stft);
+    \draw[->, thick] (stft) -- (embedding);
+    \draw[->, thick] (embedding) -- (classification);
+    \draw[->, thick] (classification) -- (scce);
+\end{tikzpicture}

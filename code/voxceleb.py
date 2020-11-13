@@ -2,6 +2,9 @@ from collections import defaultdict
 import os
 
 def calculate_splits(extract_path, iden_splits_path, n=-1, k=-1):
+    """
+    Split the VoxCeleb dataset into n classes and k samples.
+    """
     data_splits = {
         "train": defaultdict(list),
         "validation": defaultdict(list),

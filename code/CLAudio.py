@@ -8,8 +8,15 @@ from transformer import create_transformer
 from head import create_head
 from loss_functions import nt_xent_loss, triplet_loss
 from input_pipeline import create_pretrain_dataset, create_transfer_dataset
+import os
 
 class CLAudio:
+    """
+    CLAudio is a framework for self-supervised contrastive learning of audio similarities.
+    Three models are supported: vggvox, lstm and transformer.
+    Two self-supervised loss functions are supported: nt-xent and triplet.
+    Two optimizers are supported: sgd and adam
+    """
     def __init__(self, model_type, embedding_dims, proj_head_shape, loss_function="nt-xent", optimizer="adam"):
         assert model_type in ["vggvox", "lstm", "transformer"], f"{model_type} is not a supported model."
         assert loss_function in ["nt-xent", "triplet"], f"{loss_function} is not a supported loss function."
@@ -21,6 +28,9 @@ class CLAudio:
         self.pretrain_model = self._init_pretrain_model(model_type, proj_head_shape, loss_function, optimizer)
         
     def _init_pretrain_model(self, model_type, proj_head_shape, loss_function, optimizer):
+        """
+        Create a pre-train model that takes in pairs or triplets and outputs embeddings.
+        """
         if loss_function == "nt-xent":
             pair_size = 2
         elif loss_function == "triplet":
@@ -64,6 +74,9 @@ class CLAudio:
         return model
     
     def _init_transfer_model(self, num_classes, head_shape, optimizer):
+        """
+        Create a transfer model based on a pre-trained encoder model and a randomly initialized classification head.
+        """
         self.num_classes = num_classes
         if self.model_type == "vggvox":
             base_model = create_vggvox(self.embedding_dims)
@@ -98,26 +111,40 @@ class CLAudio:
         return model
         
     def pretrain(self, file_pattern, data_type, augmentation_config, batch_size=80, num_epochs=10, save_dir=None):
+        """
+        Pre-train the model.
+        """
         assert data_type in ["npx", "mp3", "flac", "wav"], f"{data_type} is not a supported datatype."
         dataset = create_pretrain_dataset(file_pattern, augmentation_config, data_type, self.loss_function, self.model_type, self.pretrain_input_shape, batch_size)
         self.history_callback = self.pretrain_model.fit(dataset, epochs=num_epochs)
-        training_duration = time.time() - t1
         if save_dir:
             self.pretrain_model.save(os.path.join(save_dir, "model"))
     
     def load_pretrain_model(self, path):
+        """
+        Load a pre-trained model from disk.
+        """
         if self.loss_function == "nt-xent":
             model = tf.keras.models.load_model(path, custom_objects={"nt_xent_loss": nt_xent_loss, "tf": tf})
         elif self.loss_function == "triplet":
             self.pretrain_model = tf.keras.models.load_model(path, custom_objects={"triplet_loss": triplet_loss, "tf": tf})
 
     def save_pretrain_model(self, path):
+        """
+        Save a pre-trained model for laster use.
+        """
         self.pretrain_model.save(path)
     
     def transfer(self, num_classes, head_shape, optimizer="sgd"):
+        """
+        Transfer the pre-trained encoder to a new classification domain.
+        """
         self.transfer_model = self._init_transfer_model(num_classes, head_shape, optimizer)
     
     def train_transfer(self, dataset, filenames, data_type, batch_size=50, num_epochs=10):
+        """
+        Train the transfer model on a downstream classification task.
+        """
         assert dataset in ["voxceleb", "birdsong", "music"], f"{dataset} is not a supported dataset."
         gamma = 10 ** (np.log10(1e-4 / 1e-2) / (num_epochs - 1))
         def scheduler(epoch, lr):
@@ -130,6 +157,9 @@ class CLAudio:
         self.transfer_model.fit(dataset, epochs=num_epochs, callbacks=[lrs])
 
     def eval_transfer(self, dataset, filenames, data_type):
+        """
+        Evaluate top-1 and top-5 accuracy on a test set.
+        """
         assert dataset in ["voxceleb", "birdsong", "music"], f"{dataset} is not a supported dataset."
         if self.model_type != "vggvox":
             shape = [None] + self.transfer_input_shape
@@ -155,7 +185,13 @@ class CLAudio:
             print("Top-5 accuracy: ", top5_result)
 
     def load_transfer_model(self, path):
+        """
+        Load a transfer model from disk.
+        """
         self.transfer_model = tf.keras.models.load_model(path)
     
     def save_transfer_model(self, path):
+        """
+        Save the transfer model.
+        """
         self.transfer_model.save(path)

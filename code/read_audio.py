@@ -7,6 +7,9 @@ import scipy
 import resampy
 
 def read_audio(path, data_type):
+    """
+    Read different types of audio files form disk.
+    """
     if data_type == "npx":
         with open(path, 'rb') as f:
             y = np.load(f)
@@ -19,6 +22,32 @@ def read_audio(path, data_type):
     elif data_type == "mp3":
         y = _load_audio(path)
     return y
+
+def _load_mp3(filename):
+    """
+    Decode a mp3 file from disk.
+    """
+    y = []
+    try:
+        with audioread.audio_open(filename) as input_file:
+            sr_native = input_file.samplerate
+            n_channels = input_file.channels
+            if sr_native != 44100 or n_channels != 2:
+                return np.array([])
+
+            for frame in input_file:
+                frame = buf_to_float(frame)
+                y.append(frame)
+
+        y = np.concatenate(y)
+        # reshape for stereo before parsing it to mono
+        y = y.reshape((-1, n_channels)).T
+        y = np.mean(y, axis=0)
+        y = _resample(y, 44100, 16000)
+        return y
+    except Exception as e:
+        print(filename, e)
+        return np.array([])
 
 # from: https://librosa.org/doc/0.7.2/_modules/librosa/core/audio.html
 def _fix_length(data, size, axis=-1, **kwargs):
@@ -55,26 +84,3 @@ def _resample(y, orig_sr, target_sr, res_type='kaiser_best', fix=True, scale=Fal
         y_hat /= np.sqrt(ratio)
 
     return np.asfortranarray(y_hat, dtype=y.dtype)
-
-def _load_mp3(filename):
-    y = []
-    try:
-        with audioread.audio_open(filename) as input_file:
-            sr_native = input_file.samplerate
-            n_channels = input_file.channels
-            if sr_native != 44100 or n_channels != 2:
-                return np.array([])
-
-            for frame in input_file:
-                frame = buf_to_float(frame)
-                y.append(frame)
-
-        y = np.concatenate(y)
-        # reshape for stereo before parsing it to mono
-        y = y.reshape((-1, n_channels)).T
-        y = np.mean(y, axis=0)
-        y = _resample(y, 44100, 16000)
-        return y
-    except Exception as e:
-        print(filename, e)
-        return np.array([])

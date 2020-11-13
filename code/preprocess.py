@@ -3,6 +3,9 @@ from scipy import signal
 
 # from: https://github.com/v-iashin/VoxCeleb/blob/master/identification.ipynb
 def enhance(samples):
+    """
+    Apply pre-emphasis, remove DC and add dither.
+    """
     pre_emphasis = 0.97
     # preemphasis filter
     samples = np.append(samples[0], samples[1:] - pre_emphasis * samples[:-1])
@@ -15,6 +18,9 @@ def enhance(samples):
     return samples
 
 def create_spectrogram(samples):
+    """
+    Convert an array of samples to a spectrogram.
+    """
     rate = 16000
     window = 'hamming'
     Tw = 25

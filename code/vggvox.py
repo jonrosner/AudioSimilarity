@@ -1,6 +1,9 @@
 import tensorflow as tf
 
 def create_vggvox(embedding_dims, name="vggvox"):
+    """
+    Create the CNN-based VGG-Vox network.
+    """
     model = tf.keras.Sequential(name=name)
     model.add(tf.keras.layers.Conv2D(96, (7,7), strides=(2,2), padding="valid", kernel_regularizer=tf.keras.regularizers.L2(5e-4), name=f"{name}_conv1"))
     model.add(tf.keras.layers.BatchNormalization())

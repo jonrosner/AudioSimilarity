@@ -4,40 +4,67 @@ from scipy import signal
 import pyrubberband as pyrb
 
 def crop(a, n):
+    """
+    Crop n random samples from a signal a.
+    """
     start = random.randint(0, len(a) - n - 1)
     return a[start:start+n]
 
 def apply_gain(a, db):
-        gain_float = 10 ** (db / 20)
-        return np.clip(a * gain_float, -1, 1)
+    """
+    Apply gain of db to a signal a.
+    """
+    gain_float = 10 ** (db / 20)
+    return np.clip(a * gain_float, -1, 1)
     
 def add_whitenoise(a, db):
+    """
+    Add white noise scaled by db to a signal a.
+    """
     return np.clip(a + apply_gain(np.random.rand(len(a)) * 2 - 1, db), -1, 1)
 
 def lowpass(a, cutoff, order, config):
+    """
+    Apply a butterworth low-pass filter at frequency cutoff to a signal a.
+    """
     B, A = signal.butter(order, cutoff / (config["sample_rate"] / 2), btype="lowpass")
     return signal.lfilter(B, A, a, axis=0)
 
 def highpass(a, cutoff, order, config):
+    """
+    Apply a butterworth high-pass filter at frequency cutoff to a signal a.
+    """
     B, A = signal.butter(order, cutoff / (config["sample_rate"] / 2), btype="highpass")
     return signal.lfilter(B, A, a, axis=0)
 
 def timestretch(a, factor):
+    """
+    Time-stretch a signal a by a factor.
+    """
     return pyrb.time_stretch(a.astype(np.float32), 16000, factor)
 
 # https://gist.github.com/cversek/1e355d961ba41535ff8296920586d9a3
 def speedup(a, factor):
+    """
+    Speed up a signal a by a factor.
+    """
     indices = np.round(np.arange(0, len(a), factor))
     indices = indices[indices < len(a)].astype(int)
     return a[indices]
 
 def pitchshift(a, n, nfft=2048):
+    """
+    Pitch-shift a signal a by n semi-tones.
+    """
     factor = 2**(1.0 * n / 12.0)
     stretched = timestretch(a, 1.0/factor)
     return speedup(stretched[nfft:], factor)
 
 # combining it saves around 20% computational time
 def timestretch_and_pitchshift(a, config, do_pitchshift, do_timestretch):
+    """
+    Apply time-stretch and pitch-shift at the same time.
+    """
     if do_timestretch and not do_pitchshift:
         factor = random.uniform(config["timestretch"][1], config["timestretch"][2])
         return timestretch(a, factor)
@@ -52,6 +79,9 @@ def timestretch_and_pitchshift(a, config, do_pitchshift, do_timestretch):
         return speedup(stretched[2048:], factor)
 
 def randomAudioAugmentation(input_samples_array, config):
+    """
+    Apply a random audio augmentation to a signal using an augmentation config.
+    """
     start = random.randint(0, len(input_samples_array) - config["split_duration"] - 1)
     a = input_samples_array[start:start+config["split_duration"]]
     augmentation_applied = False

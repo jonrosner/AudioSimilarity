@@ -2,6 +2,9 @@ from collections import defaultdict
 import os
 
 def calculate_splits(extract_path, iden_splits_path, n=-1, k=-1):
+    """
+    Split the music dataset into n classes and k samples.
+    """
     data_splits = {
         "train": collections.defaultdict(list),
         "validation": collections.defaultdict(list),

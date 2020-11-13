@@ -2,6 +2,9 @@ from collections import defaultdict
 import os
 
 def calculate_splits(iden_splits_path, n=-1, k=-1):
+    """
+    Split the birdsong dataset into n classes and k samples.
+    """
     data_splits = {
         "train": collections.defaultdict(list),
         "validation": collections.defaultdict(list),

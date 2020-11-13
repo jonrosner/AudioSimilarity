@@ -7,6 +7,9 @@ from utils import fp_to_pcm, pcm_to_fp
 from preprocess import enhance, create_spectrogram
 
 def create_pretrain_dataset(file_pattern, augmentation_config, data_type, loss_function, model_type, input_shape, batch_size):
+    """
+    Create a pre-train dataset without labels.
+    """
     augmentation_config_encoded = json.dumps(augmentation_config) # we have to encode it to pass it through the execution graph
     d = tf.data.Dataset.list_files(file_pattern)
     d = d.shuffle(buffer_size=10_000)
@@ -20,6 +23,9 @@ def create_pretrain_dataset(file_pattern, augmentation_config, data_type, loss_f
     return d
 
 def create_transfer_dataset(filenames, num_labels, split, data_type, model_type, dataset, input_shape, batch_size):
+    """
+    Create a transfer dataset with labels.
+    """
     d = tf.data.Dataset.list_files(filenames)
     d = d.shuffle(buffer_size=100000)
     d = d.map(lambda filename: _create_input_example(filename, input_shape, num_labels, split, data_type, model_type, dataset), num_parallel_calls=16, deterministic=False)
@@ -32,6 +38,9 @@ def create_transfer_dataset(filenames, num_labels, split, data_type, model_type,
     return d
 
 def _create_pair(path, augmentation_config_encoded, data_type, model_type):
+    """
+    Create a contrastive learning pair for nt-xent loss.
+    """
     augmentation_config = json.loads(augmentation_config_encoded.numpy())
     path = path.numpy()
     data_type = data_type.numpy().decode()
@@ -56,6 +65,9 @@ def _create_pair(path, augmentation_config_encoded, data_type, model_type):
     return np.array([y1_stft, y2_stft]).astype(np.float32)
 
 def _create_triplet(filenames, data_type, model_type):
+    """
+    Create a triplet for the triplet loss.
+    """
     filenames = filenames.numpy()
     data_type = data_type.numpy().decode()
     model_type = model_type.numpy().decode()
@@ -89,6 +101,9 @@ def _create_triplet(filenames, data_type, model_type):
     return np.array([a_stft, p_stft, n_stft]).astype(np.float32)
 
 def _create_example(filename, num_labels, split, data_type, model_type, dataset):
+    """
+    Create a single example and label for classification using CCE loss.
+    """
     filename = filename.numpy().decode()
     data_type = data_type.numpy().decode()
     num_labels = num_labels.numpy()

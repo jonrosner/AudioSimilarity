@@ -1,5 +1,21 @@
 import tensorflow as tf
 
+def create_transformer(embedding_dims, name="transformer"):
+    """
+    Creates the encoder part of a SpeechTranformer.
+    """
+    model = tf.keras.Sequential(name=name)
+    model.add(tf.keras.layers.Conv2D(64, 3, strides=2, padding="valid", kernel_regularizer=tf.keras.regularizers.L2(5e-4), activation="relu", name=f"{name}_conv1")) 
+    model.add(tf.keras.layers.Conv2D(64, 3, strides=2, padding="valid", kernel_regularizer=tf.keras.regularizers.L2(5e-4), activation="relu", name=f"{name}_conv2")) 
+    model.add(tf.keras.layers.Lambda(lambda x: tf.reshape(x, [-1, x.shape[1], x.shape[2] * x.shape[3]]))) 
+    model.add(tf.keras.layers.Dense(512, activation="relu", name=f"{name}_fc1"))
+    model.add(PositionalEncoding(74, 512))
+    for i in range(8):
+        model.add(TransformerBlock(512, 8, 512))
+    model.add(tf.keras.layers.GlobalAveragePooling1D(name=f"{name}_gap"))
+    model.add(tf.keras.layers.Dense(embedding_dims, kernel_regularizer=tf.keras.regularizers.L2(5e-4), activation="relu", name=f"{name}_fc"))
+    return model
+
 # from: https://keras.io/examples/nlp/text_classification_with_transformer/
 class MultiHeadSelfAttention(tf.keras.layers.Layer):
     def __init__(self, embed_dim, num_heads=8):
@@ -103,16 +119,3 @@ class PositionalEncoding(tf.keras.layers.Layer):
     def call(self, inputs):
       repeated_encodings = tf.repeat(self.pos_encodings, tf.shape(inputs)[0], axis=0)
       return inputs + repeated_encodings
-
-def create_transformer(embedding_dims, name="transformer"):
-    model = tf.keras.Sequential(name=name)
-    model.add(tf.keras.layers.Conv2D(64, 3, strides=2, padding="valid", kernel_regularizer=tf.keras.regularizers.L2(5e-4), activation="relu", name=f"{name}_conv1")) 
-    model.add(tf.keras.layers.Conv2D(64, 3, strides=2, padding="valid", kernel_regularizer=tf.keras.regularizers.L2(5e-4), activation="relu", name=f"{name}_conv2")) 
-    model.add(tf.keras.layers.Lambda(lambda x: tf.reshape(x, [-1, x.shape[1], x.shape[2] * x.shape[3]]))) 
-    model.add(tf.keras.layers.Dense(512, activation="relu", name=f"{name}_fc1"))
-    model.add(PositionalEncoding(74, 512))
-    for i in range(8):
-        model.add(TransformerBlock(512, 8, 512))
-    model.add(tf.keras.layers.GlobalAveragePooling1D(name=f"{name}_gap"))
-    model.add(tf.keras.layers.Dense(embedding_dims, kernel_regularizer=tf.keras.regularizers.L2(5e-4), activation="relu", name=f"{name}_fc"))
-    return model
